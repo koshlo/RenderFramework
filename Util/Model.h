@@ -23,11 +23,9 @@
 #define _MODEL_H_
 
 #include "../Platform.h"
-#include "KdTree.h"
 #include "../Renderer.h"
 #include "ObjMaterialLib.h"
 
-#include "String.h"
 #include <vector>
 
 typedef int StreamID;

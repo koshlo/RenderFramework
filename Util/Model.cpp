@@ -24,6 +24,7 @@
 #include "ParsingHelpers.h"
 
 #include "Hash.h"
+#include "KdTree.h"
 
 Model::Model(){
 	vertexFormat = VF_NONE;

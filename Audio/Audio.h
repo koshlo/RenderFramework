@@ -22,6 +22,8 @@
 #ifndef _AUDIO_H_
 #define _AUDIO_H_
 
+#ifdef ENABLE_AUDIO
+
 #include "../Platform.h"
 #include "../Math/Vector.h"
 #include "../Util/Array.h"
@@ -89,5 +91,7 @@ protected:
 	Array <Sound> sounds;
 	Array <SoundSrc> soundSources;
 };
+
+#endif // ENABLE_AUDIO
 
 #endif // _AUDIO_H_

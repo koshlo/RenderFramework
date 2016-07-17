@@ -51,12 +51,12 @@ __forceinline void planeDistance3DNow(const vec4 *plane, const vec4 *point, int 
 
 #include "../CPU.h"
 
-forceinline v4sf dot4(v4sf u, v4sf v){
+/*forceinline v4sf dot4(v4sf u, v4sf v){
 	v4sf m = mulps(u, v);
 	v4sf f = shufps(m, m, SHUFFLE(2, 3, 0, 1));
 	m = addps(m, f);
 	f = shufps(m, m, SHUFFLE(1, 0, 3, 2));
 	return addps(m, f);
-}
+}*/
 
 #endif

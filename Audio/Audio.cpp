@@ -20,17 +20,20 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "Audio.h"
+
+#ifdef ENABLE_AUDIO
+
 #include <stdio.h>
 
 #include "codec.h"
 #include "vorbisfile.h"
 
 #ifdef _WIN32
-#  pragma comment (lib, "../Framework3/Libs/OpenAL32.lib")
-#  pragma comment (lib, "../Framework3/Libs/alut.lib")
-#  pragma comment (lib, "../Framework3/Libs/ogg_static.lib")
-#  pragma comment (lib, "../Framework3/Libs/vorbis_static.lib")
-#  pragma comment (lib, "../Framework3/Libs/vorbisfile_static.lib")
+#  pragma comment (lib, "../RenderFramework/Libs/OpenAL32.lib")
+#  pragma comment (lib, "../RenderFramework/Libs/alut.lib")
+#  pragma comment (lib, "../RenderFramework/Libs/ogg_static.lib")
+#  pragma comment (lib, "../RenderFramework/Libs/vorbis_static.lib")
+#  pragma comment (lib, "../RenderFramework/Libs/vorbisfile_static.lib")
 #endif
 
 Audio::Audio(){
@@ -223,3 +226,5 @@ void Audio::setSourceAttenuation(const SoundSourceID source, const float rollOff
 	alSourcef(soundSources[source].source, AL_REFERENCE_DISTANCE, refDistance);
 	alSourcef(soundSources[source].source, AL_ROLLOFF_FACTOR, rollOff);
 }
+
+#endif // ENABLE_AUDIO

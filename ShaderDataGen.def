@@ -1,0 +1,61 @@
+#if GENERATION_PASS == GENERATE_MEMBERS
+
+#undef CONSTANT_2F
+#undef CONSTANT_4F
+#undef CONSTANT_MATRIX_4F
+#undef TEXTURE_2D
+#undef TEXTURE_3D
+#undef SAMPLER_STATE
+#undef UAV_TEXTURE2D
+
+#define CONSTANT_2F(Name) float2 _##Name;
+#define CONSTANT_4F(Name) float4 _##Name;
+#define CONSTANT_MATRIX_4F(Name) float4x4 _##Name;
+#define TEXTURE_2D(Name, Type) TextureID _##Name;
+#define TEXTURE_3D(Name, Type) TextureID _##Name;
+#define SAMPLER_STATE(Name) SamplerStateID _##Name;
+#define UAV_TEXTURE2D(Name) TextureID _##Name;
+
+#elif GENERATION_PASS == GENERATE_ACCESSORS
+
+#undef CONSTANT_2F
+#undef CONSTANT_4F
+#undef CONSTANT_MATRIX_4F
+#undef TEXTURE_2D
+#undef TEXTURE_3D
+#undef SAMPLER_STATE
+#undef UAV_TEXTURE2D
+
+#define ACCESSOR_HELPER(Name, Type) const Type Get##Name() const { return _##Name; } \
+									void Set##Name(Type val) { _##Name = val; }
+
+#define CONSTANT_2F(Name) ACCESSOR_HELPER(Name, float2)
+#define CONSTANT_4F(Name) ACCESSOR_HELPER(Name, float4)
+#define CONSTANT_MATRIX_4F(Name) ACCESSOR_HELPER(Name, float4x4)
+#define TEXTURE_2D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
+#define TEXTURE_3D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
+#define SAMPLER_STATE(Name) ACCESSOR_HELPER(Name, SamplerStateID)
+#define UAV_TEXTURE2D(Name) ACCESSOR_HELPER(Name, TextureID)
+
+#elif GENERATION_PASS == GENERATE_APPLY
+
+#undef CONSTANT_2F
+#undef CONSTANT_4F
+#undef CONSTANT_MATRIX_4F
+#undef TEXTURE_2D
+#undef TEXTURE_3D
+#undef SAMPLER_STATE
+#undef UAV_TEXTURE2D
+
+#define STR(x) #x
+#define CALL_STATE_HELPER(Name) stateHelper->SetShaderParam(STR(Name), _##Name);
+
+#define CONSTANT_2F(Name) stateHelper->SetShaderParam(STR(Name), _##Name);
+#define CONSTANT_4F(Name) stateHelper->SetShaderParam(STR(Name), _##Name);
+#define CONSTANT_MATRIX_4F(Name) stateHelper->SetShaderParam(STR(Name), _##Name);
+#define TEXTURE_2D(Name, Type) stateHelper->SetShaderTexture(STR(Name), _##Name);
+#define TEXTURE_3D(Name, Type) stateHelper->SetShaderTexture(STR(Name), _##Name);
+#define SAMPLER_STATE(Name) stateHelper->SetSamplerState(STR(Name), _##Name);(Name)
+#define UAV_TEXTURE2D(Name) stateHelper->SetUnorderedAccessTexture(STR(Name), _##Name);(Name)
+
+#endif // GERETAION_PASS

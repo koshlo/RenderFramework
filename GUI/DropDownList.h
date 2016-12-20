@@ -55,7 +55,7 @@ public:
 	bool onKey(const unsigned int key, const bool pressed);
 	void onFocus(const bool focus);
 
-	void draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
+	void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 
 protected:
 	Array <char *> items;

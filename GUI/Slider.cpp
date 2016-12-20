@@ -66,21 +66,21 @@ bool Slider::onMouseButton(const int x, const int y, const MouseButton button, c
 	return true;
 }
 
-void Slider::draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
+void Slider::draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
 	vec4 black(0, 0, 0, 1);
 
 	vec2 quad[] = { MAKEQUAD(xPos, yPos, xPos + width, yPos + height, 2) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), blendSrcAlpha, depthState, &color);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), blendSrcAlpha, depthState, &color);
 
 	vec2 rect[] = { MAKERECT(xPos, yPos, xPos + width, yPos + height, 2) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
 
 	vec2 line[] = { MAKEQUAD(xPos + 0.5f * height, yPos + 0.5f * height - 1, xPos + width - 0.5f * height, yPos + 0.5f * height + 1, 0) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, line, elementsOf(line), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, line, elementsOf(line), BS_NONE, depthState, &black);
 
 	float x = lerp(xPos + 0.5f * height, xPos + width - 0.5f * height, (value - minValue) / (maxValue - minValue));
 	vec2 marker[] = { MAKEQUAD(x - 0.2f * height, yPos + 0.2f * height, x + 0.2f * height, yPos + 0.8f * height, 0) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, marker, elementsOf(marker), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, marker, elementsOf(marker), BS_NONE, depthState, &black);
 }
 
 void Slider::updateValue(const int x){

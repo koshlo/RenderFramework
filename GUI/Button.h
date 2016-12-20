@@ -44,10 +44,10 @@ public:
 	virtual bool onMouseButton(const int x, const int y, const MouseButton button, const bool pressed);
 	virtual bool onKey(const unsigned int key, const bool pressed);
 
-	virtual void draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
+	virtual void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 
 protected:
-	void drawButton(Renderer *renderer, const char *text, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
+	void drawButton(GraphicsDevice *gfxDevice, const char *text, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 
 	char *text;
 
@@ -64,7 +64,7 @@ public:
 	bool onMouseButton(const int x, const int y, const MouseButton button, const bool pressed);
 	bool onKey(const unsigned int key, const bool pressed);
 
-	void draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
+	void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 protected:
 	uint *targetKey;
 
@@ -80,7 +80,7 @@ public:
 	bool onKey(const unsigned int key, const bool pressed);
 	bool onJoystickAxis(const int axis, const float value);
 
-	void draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
+	void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 protected:
 	int *targetAxis;
 	bool *targetAxisInvert;
@@ -97,7 +97,7 @@ public:
 	bool onKey(const unsigned int key, const bool pressed);
 	bool onJoystickButton(const int button, const bool pressed);
 
-	void draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
+	void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 protected:
 	int *targetButton;
 

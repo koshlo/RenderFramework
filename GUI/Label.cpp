@@ -35,12 +35,12 @@ Label::~Label(){
 	delete text;
 }
 
-void Label::draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
+void Label::draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
 	float textWidth = 0.75f * height;
 
-	float tw = renderer->getTextWidth(defaultFont, text);
+	float tw = gfxDevice->getTextWidth(defaultFont, text);
 	float maxW = width / tw;
 	if (textWidth > maxW) textWidth = maxW;
 
-	renderer->drawText(text, xPos, yPos, textWidth, height, defaultFont, linearClamp, blendSrcAlpha, depthState);
+	gfxDevice->drawText(text, xPos, yPos, textWidth, height, defaultFont, linearClamp, blendSrcAlpha, depthState);
 }

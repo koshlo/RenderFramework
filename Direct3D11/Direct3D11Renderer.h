@@ -35,7 +35,7 @@
 */
 
 
-class Direct3D11Renderer : public Renderer
+class Direct3D11Renderer : public GraphicsDevice
 {
 public:
 	Direct3D11Renderer(ID3D11Device *d3ddev, ID3D11DeviceContext *ctx);

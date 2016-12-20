@@ -60,7 +60,7 @@ bool CheckBox::onKey(const unsigned int key, const bool pressed){
 	return false;
 }
 
-void CheckBox::draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
+void CheckBox::draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
 	if (check == TEXTURE_NONE){
 		uint32 checkPic[] = {
 			0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xffffffff,0xf5ffffff,0x9744619d,0xffffffff,0xffffffff,
@@ -74,30 +74,30 @@ void CheckBox::draw(Renderer *renderer, const FontID defaultFont, const SamplerS
 		Image img;
 		img.loadFromMemory(checkPic, FORMAT_I8, 16, 16, 1, 1, false);
 		img.convert(FORMAT_RGBA8); // For DX10
-		check = renderer->addTexture(img, false, linearClamp);
+		check = gfxDevice->addTexture(img, false, linearClamp);
 	}
 
 	if (checked){
 		TexVertex quad[] = { MAKETEXQUAD(xPos, yPos + 0.2f * height, xPos + 0.6f * height, yPos + 0.8f * height, 3) };
-		renderer->drawTextured(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), check, linearClamp, BS_NONE, depthState);
+		gfxDevice->drawTextured(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), check, linearClamp, BS_NONE, depthState);
 	} else {
 		vec2 quad[] = { MAKEQUAD(xPos, yPos + 0.2f * height, xPos + 0.6f * height, yPos + 0.8f * height, 3) };
-		renderer->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), BS_NONE, depthState);
+		gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), BS_NONE, depthState);
 	}
 
 	vec2 rect[] = { MAKERECT(xPos, yPos + 0.2f * height, xPos + 0.6f * height, yPos + 0.8f * height, 3) };
 	vec4 black(0, 0, 0, 1);
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
 
 
 	float textWidth = 0.75f * height;
 
 	float w = width - 0.7f * height;
-	float tw = renderer->getTextWidth(defaultFont, text);
+	float tw = gfxDevice->getTextWidth(defaultFont, text);
 	float maxW = w / tw;
 	if (textWidth > maxW) textWidth = maxW;
 
 	float x = 0.7f * height;
 
-	renderer->drawText(text, xPos + x, yPos, textWidth, height, defaultFont, linearClamp, blendSrcAlpha, depthState);
+	gfxDevice->drawText(text, xPos + x, yPos, textWidth, height, defaultFont, linearClamp, blendSrcAlpha, depthState);
 }

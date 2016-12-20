@@ -48,7 +48,7 @@ public:
 
 	Optional() : _inited(false) {}
 	
-	explicit Optional(const T& value) : _inited(true)
+	Optional(const T& value) : _inited(true)
 	{
 		Construct(value);
 	}
@@ -85,9 +85,14 @@ public:
 		Destruct();
 	}
 
-	operator bool() const
+	bool isValid() const
 	{
 		return _inited;
+	}
+
+	operator bool() const
+	{
+		return isValid();
 	}
 
 	RefType getVal()

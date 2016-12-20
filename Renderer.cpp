@@ -42,7 +42,7 @@ int constantTypeSizes[CONSTANT_TYPE_COUNT] = {
 };
 
 
-Renderer::Renderer(){
+GraphicsDevice::GraphicsDevice(){
 	nImageUnits = 1;
 	nMRTs = 1;
 	maxAnisotropic = 1;
@@ -60,13 +60,13 @@ Renderer::Renderer(){
 #endif
 }
 
-Renderer::~Renderer(){
+GraphicsDevice::~GraphicsDevice(){
 //	delete textureLod;
 
 	delete fontBuffer;
 }
 
-void Renderer::resetToDefaults(){
+void GraphicsDevice::resetToDefaults(){
 	currentShader = SHADER_NONE;
 
 /*	for (uint i = 0; i < nImageUnits; i++){
@@ -105,7 +105,7 @@ void Renderer::resetToDefaults(){
 	reset();
 }
 
-void Renderer::reset(const uint flags){
+void GraphicsDevice::reset(const uint flags){
 	if (flags & RESET_SHADER) selectedShader = SHADER_NONE;
 
 /*	for (unsigned int i = 0; i < nImageUnits; i++){
@@ -136,7 +136,7 @@ void Renderer::reset(const uint flags){
 	if (flags & RESET_RS) selectedRasterizerState = RS_NONE;
 }
 
-void Renderer::applyVertexStates()
+void GraphicsDevice::applyVertexStates()
 {
 	changeVertexFormat(selectedVertexFormat);
 	for (uint i = 0; i < MAX_VERTEXSTREAM; i++){
@@ -147,7 +147,7 @@ void Renderer::applyVertexStates()
 	if (selectedIndexBuffer != DONTCARE) changeIndexBuffer(selectedIndexBuffer);
 }
 
-void Renderer::apply(){
+void GraphicsDevice::apply(){
 	if (selectedShader != DONTCARE){
 		changeShader(selectedShader);
 		applyConstants();
@@ -177,7 +177,7 @@ void Renderer::apply(){
 }
 
 /*
-void Renderer::clear(){
+void GraphicsDevice::clear(){
 	int index;
 
 	reset();
@@ -193,7 +193,7 @@ void Renderer::clear(){
 }
 */
 
-TextureID Renderer::addTexture(const char *fileName, const bool useMipMaps, const SamplerStateID samplerState, uint flags){
+TextureID GraphicsDevice::addTexture(const char *fileName, const bool useMipMaps, const SamplerStateID samplerState, uint flags){
 	Image img;
 
 	uint loadFlags = 0;
@@ -212,7 +212,7 @@ TextureID Renderer::addTexture(const char *fileName, const bool useMipMaps, cons
 	}
 }
 
-TextureID Renderer::addCubemap(const char **fileNames, const bool useMipMaps, const SamplerStateID samplerState, const int nArraySlices, uint flags){
+TextureID GraphicsDevice::addCubemap(const char **fileNames, const bool useMipMaps, const SamplerStateID samplerState, const int nArraySlices, uint flags){
 	Image img;
 	if (img.loadSlicedImage(fileNames, 0, nArraySlices)){
 		if (img.getFormat() == FORMAT_RGBE8) img.unpackImage();
@@ -230,7 +230,7 @@ TextureID Renderer::addCubemap(const char **fileNames, const bool useMipMaps, co
 	}
 }
 
-TextureID Renderer::addNormalMap(const char *fileName, const FORMAT destFormat, const bool useMipMaps, const SamplerStateID samplerState, float sZ, float mipMapScaleZ, uint flags){
+TextureID GraphicsDevice::addNormalMap(const char *fileName, const FORMAT destFormat, const bool useMipMaps, const SamplerStateID samplerState, float sZ, float mipMapScaleZ, uint flags){
 	Image img;
 
 	uint loadFlags = 0;
@@ -250,15 +250,15 @@ TextureID Renderer::addNormalMap(const char *fileName, const FORMAT destFormat, 
 	return TEXTURE_NONE;
 }
 
-ShaderID Renderer::addShader(const char *fileName, const uint flags){
+ShaderID GraphicsDevice::addShader(const char *fileName, const uint flags){
 	return addShader(fileName, NULL, 0, NULL, flags);
 }
 
-ShaderID Renderer::addShader(const char *fileName, const char *extra, const uint flags){
+ShaderID GraphicsDevice::addShader(const char *fileName, const char *extra, const uint flags){
 	return addShader(fileName, NULL, 0, extra, flags);
 }
 
-ShaderID Renderer::addShader(const char *fileName, const char **attributeNames, const int nAttributes, const char *extra, const uint flags){
+ShaderID GraphicsDevice::addShader(const char *fileName, const char **attributeNames, const int nAttributes, const char *extra, const uint flags){
 	ShaderID res = SHADER_NONE;
     File file(fileName);
 	if (file.isValid()) {
@@ -329,12 +329,12 @@ ShaderID Renderer::addShader(const char *fileName, const char **attributeNames, 
 	return res;
 }
 
-ShaderID Renderer::addComputeShader(const char *filename)
+ShaderID GraphicsDevice::addComputeShader(const char *filename)
 {
     return addComputeShader(filename, NULL, 0);
 }
 
-ShaderID Renderer::addComputeShader(const char* filename, const char** defines, const int definesCount)
+ShaderID GraphicsDevice::addComputeShader(const char* filename, const char** defines, const int definesCount)
 {
     ShaderID res = SHADER_NONE;
     File shaderFile(filename);
@@ -346,12 +346,12 @@ ShaderID Renderer::addComputeShader(const char* filename, const char** defines, 
     return res;
 }
 
-int Renderer::getFormatSize(const AttributeFormat format) const {
+int GraphicsDevice::getFormatSize(const AttributeFormat format) const {
 	static int formatSize[] = { sizeof(float), sizeof(half), sizeof(ubyte) };
 	return formatSize[format];
 }
 
-FontID Renderer::addFont(const char *textureFile, const char *fontFile, const SamplerStateID samplerState){
+FontID GraphicsDevice::addFont(const char *textureFile, const char *fontFile, const SamplerStateID samplerState){
 	FILE *file = fopen(fontFile, "rb");
 	if (file == NULL) return FONT_NONE;
 
@@ -367,62 +367,62 @@ FontID Renderer::addFont(const char *textureFile, const char *fontFile, const Sa
 	return fonts.add(font);
 }
 
-void Renderer::setShaderConstant1i(const char *name, const int constant){
+void GraphicsDevice::setShaderConstant1i(const char *name, const int constant){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, &constant, sizeof(constant));
 }
 
-void Renderer::setShaderConstant1f(const char *name, const float constant){
+void GraphicsDevice::setShaderConstant1f(const char *name, const float constant){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, &constant, sizeof(constant));
 }
 
-void Renderer::setShaderConstant2f(const char *name, const vec2 &constant){
+void GraphicsDevice::setShaderConstant2f(const char *name, const vec2 &constant){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, &constant, sizeof(constant));
 }
 
-void Renderer::setShaderConstant3f(const char *name, const vec3 &constant){
+void GraphicsDevice::setShaderConstant3f(const char *name, const vec3 &constant){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, &constant, sizeof(constant));
 }
 
-void Renderer::setShaderConstant4f(const char *name, const vec4 &constant){
+void GraphicsDevice::setShaderConstant4f(const char *name, const vec4 &constant){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, &constant, sizeof(constant));
 }
 
-void Renderer::setShaderConstant4x4f(const char *name, const mat4 &constant){
+void GraphicsDevice::setShaderConstant4x4f(const char *name, const mat4 &constant){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, &constant, sizeof(constant));
 }
 
-void Renderer::setShaderConstantArray1f(const char *name, const float *constant, const uint count){
+void GraphicsDevice::setShaderConstantArray1f(const char *name, const float *constant, const uint count){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, constant, count * sizeof(float));
 }
 
-void Renderer::setShaderConstantArray2f(const char *name, const vec2 *constant, const uint count){
+void GraphicsDevice::setShaderConstantArray2f(const char *name, const vec2 *constant, const uint count){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, constant, count * sizeof(vec2));
 }
 
-void Renderer::setShaderConstantArray3f(const char *name, const vec3 *constant, const uint count){
+void GraphicsDevice::setShaderConstantArray3f(const char *name, const vec3 *constant, const uint count){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, constant, count * sizeof(vec3));
 }
 
-void Renderer::setShaderConstantArray4f(const char *name, const vec4 *constant, const uint count){
+void GraphicsDevice::setShaderConstantArray4f(const char *name, const vec4 *constant, const uint count){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, constant, count * sizeof(vec4));
 }
 
-void Renderer::setShaderConstantArray4x4f(const char *name, const mat4 *constant, const uint count){
+void GraphicsDevice::setShaderConstantArray4x4f(const char *name, const mat4 *constant, const uint count){
 	ASSERT(selectedShader != SHADER_NONE);
 	setShaderConstantRaw(name, constant, count * sizeof(mat4));
 }
 
-float Renderer::getTextWidth(const FontID font, const char *str, int length) const {
+float GraphicsDevice::getTextWidth(const FontID font, const char *str, int length) const {
 	if (font < 0) return 0;
 	if (length < 0) length = (int) strlen(str);
 
@@ -436,7 +436,7 @@ float Renderer::getTextWidth(const FontID font, const char *str, int length) con
 	return len;
 }
 
-uint Renderer::getTextQuads(const char *str) const {
+uint GraphicsDevice::getTextQuads(const char *str) const {
 	uint n = 0;
 	while (*str){
 		if (*str != '\n') n++;
@@ -445,7 +445,7 @@ uint Renderer::getTextQuads(const char *str) const {
 	return n;
 }
 
-void Renderer::fillTextBuffer(TexVertex *dest, const char *str, float x, float y, const float charWidth, const float charHeight, const FontID font) const {
+void GraphicsDevice::fillTextBuffer(TexVertex *dest, const char *str, float x, float y, const float charWidth, const float charHeight, const FontID font) const {
     float startx = x;
 
     while (*str){
@@ -478,7 +478,7 @@ void Renderer::fillTextBuffer(TexVertex *dest, const char *str, float x, float y
     }
 }
 
-bool Renderer::drawText(const char *str, float x, float y, const float charWidth, const float charHeight, const FontID font, const SamplerStateID samplerState, const BlendStateID blendState, const DepthStateID depthState){
+bool GraphicsDevice::drawText(const char *str, float x, float y, const float charWidth, const float charHeight, const FontID font, const SamplerStateID samplerState, const BlendStateID blendState, const DepthStateID depthState){
 	if (font == FONT_NONE) return false;
 
 	uint n = 6 * getTextQuads(str);
@@ -496,17 +496,17 @@ bool Renderer::drawText(const char *str, float x, float y, const float charWidth
 	return true;
 }
 
-void Renderer::setViewport(const int width, const int height){
+void GraphicsDevice::setViewport(const int width, const int height){
 	viewportWidth  = width;
 	viewportHeight = height;
 }
 
-void Renderer::resetStatistics(){
+void GraphicsDevice::resetStatistics(){
 	nDrawCalls = 0;
 }
 
 #ifdef PROFILE
-void Renderer::profileFrameStart(const float frameTime){
+void GraphicsDevice::profileFrameStart(const float frameTime){
 	profileStringIndex = sprintf(profileString, "Frametime: %.2fms\n\n", frameTime * 1000.0f);
 	profileFrame = true;
 
@@ -519,12 +519,12 @@ void Renderer::profileFrameStart(const float frameTime){
 	profileFrameCount++;
 }
 
-void Renderer::profileFrameEnd(){
+void GraphicsDevice::profileFrameEnd(){
 	profileReset = !profileFrame;
 	profileFrame = false;
 }
 
-void Renderer::profileBegin(const char *name){
+void GraphicsDevice::profileBegin(const char *name){
 	if (profileFrame){
 		finish();
 
@@ -533,7 +533,7 @@ void Renderer::profileBegin(const char *name){
 	}
 }
 
-void Renderer::profileNext(const char *name){
+void GraphicsDevice::profileNext(const char *name){
 	if (profileFrame){
 		finish();
 
@@ -547,7 +547,7 @@ void Renderer::profileNext(const char *name){
 	}
 }
 
-void Renderer::profileEnd(){
+void GraphicsDevice::profileEnd(){
 	if (profileFrame){
 		finish();
 		float currTime = getCurrentTime();

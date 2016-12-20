@@ -2,6 +2,7 @@
 #define _OBJ_MATERIAL_LIB_H_
 
 #include <vector>
+#include <memory>
 
 #include "Array.h"
 #include "ArrayMap.h"
@@ -11,11 +12,11 @@
 #include "ResourceLoader.h"
 
 class ObjMaterialLib;
+class MaterialShaderData;
 
 struct ObjMaterialLibTraits
 {
 	typedef ObjMaterialLib ReturnType;
-	typedef bool InfoType;
 };
 
 typedef ResourceId<ObjMaterialLibTraits> MaterialLibResId;
@@ -24,17 +25,21 @@ class ObjMaterialLib
 {
 public:
 	typedef Optional<const Material&> MaterialOptRef;
-	typedef Optional<const PBRMaterial&> PBRMaterialOptRef;
 
-	ObjMaterialLib(RenderResourceLoader& resourceLoader) : _resourceLoader(resourceLoader) {}
-	
-	bool load(const MaterialLibResId& matLibId, bool isPbr);
+	ObjMaterialLib(const RenderResourceLoader& resourceLoader);
+	~ObjMaterialLib();
 
-	void applyMaterial(const std::string& name, Renderer* renderer);
+	ObjMaterialLib(ObjMaterialLib&& other) = default;
+	 
+	bool load(const MaterialLibResId& matLibId);
+
+	const MaterialShaderData& getMaterialShaderData(const std::string& matName) const;
+	MaterialShaderData* getMaterialShaderData(const std::string& matName);
 
 private:
+	struct MaterialDataHolder;
+
 	typedef ArrayMap<MaterialResId, Material> MaterialMap;
-	typedef ArrayMap<PBRMaterialResId, PBRMaterial> PBRMaterialMap;
 	typedef ArrayMap<TextureResId, TextureID> TextureMap;
 
 	void loadTexture(const TextureResId& name);
@@ -45,21 +50,17 @@ private:
 	template <typename MatType>
 	MatType& addMaterial(const ResourceId<MaterialTraits<MatType>>& materialKey);
 
-	void applyMaterial(const MaterialResId& matId, Renderer* renderer);
-	void applyMaterial(const PBRMaterialResId& matId, Renderer* renderer);
-
+	TextureID getTexture(const TextureResId& name, TextureID defaultTexture = TEXTURE_NONE) const;
 	const MaterialOptRef getMaterial(const MaterialResId& name) const;
-	const PBRMaterialOptRef getMaterial(const PBRMaterialResId& name) const;
-	Optional<TextureID> getTexture(const TextureResId& name) const;
 
-	RenderResourceLoader _resourceLoader;
+	const RenderResourceLoader& _resourceLoader;
 	MaterialMap _materialMap;
-	PBRMaterialMap _pbrMaterialMap;
 	TextureMap _loadedTextures;
-	bool _isPBR;
+
+	std::unique_ptr<MaterialDataHolder> _materialDataHolder;
 };
 
 template <>
-void RenderResourceLoader::SyncLoad(const MaterialLibResId& matLibId, Optional<ObjMaterialLib>* resultLib);
+void RenderResourceLoader::SyncLoad(const MaterialLibResId& matLibId, Optional<ObjMaterialLib>* resultLib) const;
 
 #endif

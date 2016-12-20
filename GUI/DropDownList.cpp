@@ -161,20 +161,20 @@ void DropDownList::onFocus(const bool focus){
 	capture = isDroppedDown = false;
 }
 
-void DropDownList::draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
+void DropDownList::draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
 	vec4 col = enabled? color : vec4(color.xyz() * 0.5f, 1);
 	vec4 black(0, 0, 0, 1);
 
 	vec2 quad[] = { MAKEQUAD(xPos, yPos, xPos + width, yPos + height, 2) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), blendSrcAlpha, depthState, &col);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), blendSrcAlpha, depthState, &col);
 
 	vec2 rect[] = { MAKERECT(xPos, yPos, xPos + width, yPos + height, 2) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
 
 	vec2 line0[] = { MAKEQUAD(xPos + width - height, yPos + 2, xPos + width - height + 2, yPos + height - 2, 0) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, line0, elementsOf(line0), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, line0, elementsOf(line0), BS_NONE, depthState, &black);
 	vec2 line1[] = { MAKEQUAD(xPos + width - height + 1, yPos + 0.5f * height - 1, xPos + width - 2, yPos + 0.5f * height + 1, 0) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, line1, elementsOf(line1), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, line1, elementsOf(line1), BS_NONE, depthState, &black);
 
 	vec2 triangles[] = {
 		vec2(xPos + width - 0.5f * height, yPos + 0.1f * height),
@@ -184,31 +184,31 @@ void DropDownList::draw(Renderer *renderer, const FontID defaultFont, const Samp
 		vec2(xPos + width - 0.8f * height, yPos + 0.6f * height),
 		vec2(xPos + width - 0.2f * height, yPos + 0.6f * height),
 	};
-	renderer->drawPlain(PRIM_TRIANGLES, triangles, elementsOf(triangles), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLES, triangles, elementsOf(triangles), BS_NONE, depthState, &black);
 
 	float textWidth = 0.75f * height;
 	float w = width - 1.3f * height;
 	if (selectedItem >= 0){
-		float tw = renderer->getTextWidth(defaultFont, items[selectedItem]);
+		float tw = gfxDevice->getTextWidth(defaultFont, items[selectedItem]);
 		float maxW = w / tw;
 		if (textWidth > maxW) textWidth = maxW;
 
-		renderer->drawText(items[selectedItem], xPos + 0.15f * height, yPos, textWidth, height, defaultFont, linearClamp, blendSrcAlpha, depthState);
+		gfxDevice->drawText(items[selectedItem], xPos + 0.15f * height, yPos, textWidth, height, defaultFont, linearClamp, blendSrcAlpha, depthState);
 	}
 
 	if (isDroppedDown){
 		vec2 quad[] = { MAKEQUAD(xPos, yPos - selectedItem * height, xPos + width - height + 2, yPos + (items.getCount() - selectedItem) * height, 2) };
-		renderer->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), blendSrcAlpha, depthState, &col);
+		gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), blendSrcAlpha, depthState, &col);
 
 		vec2 rect[] = { MAKERECT(xPos, yPos - selectedItem * height, xPos + width - height + 2, yPos + (items.getCount() - selectedItem) * height, 2) };
-		renderer->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
+		gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
 
 		for (uint i = 0; i < items.getCount(); i++){
-			float tw = renderer->getTextWidth(defaultFont, items[i]);
+			float tw = gfxDevice->getTextWidth(defaultFont, items[i]);
 			float maxW = w / tw;
 			if (textWidth > maxW) textWidth = maxW;
 
-			renderer->drawText(items[i], xPos + 0.15f * height, yPos + (int(i) - selectedItem) * height, textWidth, height, defaultFont, linearClamp, blendSrcAlpha, depthState);
+			gfxDevice->drawText(items[i], xPos + 0.15f * height, yPos + (int(i) - selectedItem) * height, textWidth, height, defaultFont, linearClamp, blendSrcAlpha, depthState);
 		}		
 	}
 

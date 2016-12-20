@@ -115,10 +115,10 @@ extern const int SOLID;
 extern const int WIREFRAME;
 
 
-class Renderer {
+class GraphicsDevice {
 public:
-	Renderer();
-	virtual ~Renderer();
+	GraphicsDevice();
+	virtual ~GraphicsDevice();
 
 	virtual void resetToDefaults();
 	virtual void reset(const uint flags = RESET_ALL);

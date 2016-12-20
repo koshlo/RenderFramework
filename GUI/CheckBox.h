@@ -46,7 +46,7 @@ public:
 	bool onMouseButton(const int x, const int y, const MouseButton button, const bool pressed);
 	bool onKey(const unsigned int key, const bool pressed);
 
-	void draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
+	void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 
 protected:
 	char *text;

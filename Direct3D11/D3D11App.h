@@ -58,7 +58,7 @@ protected:
 	bool createBuffers(const bool sampleBackBuffer);
 	bool deleteBuffers();
 
-	ID3D11Device *device;
+	ID3D11Device *nativeDevice;
 	ID3D11DeviceContext *context;
 
 	IDXGISwapChain *swapChain;

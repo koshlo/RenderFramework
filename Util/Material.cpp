@@ -2,10 +2,10 @@
 #include "String.h"
 
 template <>
-Optional<TextureID> RenderResourceLoader::SyncLoad(const TextureResId& resId)
+Optional<TextureID> RenderResourceLoader::SyncLoad(const TextureResId& resId) const
 {
 	String path; path.sprintf("%s%s", DataPath(), resId.getId().c_str());
-	TextureID texture = _renderer.addTexture(path.dataPtr(), true);
+	TextureID texture = _device.addTexture(path.dataPtr(), true);
 	Optional<TextureID> retTexture;
 	if (texture != TEXTURE_NONE)
 	{

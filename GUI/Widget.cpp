@@ -38,7 +38,7 @@ void Widget::setSize(const float w, const float h){
 	height = h;
 }
 
-void Widget::drawSoftBorderQuad(Renderer *renderer, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState, const float x0, const float y0, const float x1, const float y1, const float borderWidth, const float colScale, const float transScale){
+void Widget::drawSoftBorderQuad(GraphicsDevice *gfxDevice, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState, const float x0, const float y0, const float x1, const float y1, const float borderWidth, const float colScale, const float transScale){
 	if (corner == TEXTURE_NONE){
 		ubyte pixels[32][32][4];
 
@@ -55,7 +55,7 @@ void Widget::drawSoftBorderQuad(Renderer *renderer, const SamplerStateID linearC
 
 		Image img;
 		img.loadFromMemory(pixels, FORMAT_RGBA8, 32, 32, 1, 1, false);
-		corner = renderer->addTexture(img, false, linearClamp);
+		corner = gfxDevice->addTexture(img, false, linearClamp);
 	}
 
 	float x0bw = x0 + borderWidth;
@@ -94,9 +94,9 @@ void Widget::drawSoftBorderQuad(Renderer *renderer, const SamplerStateID linearC
 	};
 	vec4 col = color * vec4(colScale, colScale, colScale, transScale);
 
-	renderer->drawTextured(PRIM_TRIANGLE_STRIP, border, elementsOf(border), corner, linearClamp, blendSrcAlpha, depthState, &col);
+	gfxDevice->drawTextured(PRIM_TRIANGLE_STRIP, border, elementsOf(border), corner, linearClamp, blendSrcAlpha, depthState, &col);
 
 	// Center
 	vec2 center[] = { vec2(x0bw, y0bw), vec2(x1bw, y0bw), vec2(x0bw, y1bw), vec2(x1bw, y1bw) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, center, 4, blendSrcAlpha, depthState, &col);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, center, 4, blendSrcAlpha, depthState, &col);
 }

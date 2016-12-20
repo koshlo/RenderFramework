@@ -52,7 +52,7 @@ public:
 	virtual void onSize(const int w, const int h){}
 	virtual void onFocus(const bool focus){}
 
-	virtual void draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState) = 0;
+	virtual void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState) = 0;
 
 	void setPosition(const float x, const float y);
 	void setSize(const float w, const float h);
@@ -75,7 +75,7 @@ protected:
 
 	static TextureID corner, check;
 
-	void drawSoftBorderQuad(Renderer *renderer, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState, const float x0, const float y0, const float x1, const float y1, const float borderWidth, const float colScale = 1, const float transScale = 1);
+	void drawSoftBorderQuad(GraphicsDevice *gfxDevice, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState, const float x0, const float y0, const float x1, const float y1, const float borderWidth, const float colScale = 1, const float transScale = 1);
 
 	vec4 color;
 	float xPos, yPos, width, height;

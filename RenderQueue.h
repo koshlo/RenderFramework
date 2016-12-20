@@ -5,23 +5,50 @@
 #include <vector>
 
 typedef void* RenderCommand;
+struct RenderState;
+typedef const RenderState* RenderStatePtr;
+
+struct DispatchGroup
+{
+	uint x;
+	uint y;
+	uint z;
+};
 
 class RenderQueue
 {
 public:
+	typedef uint32_t SortKeyType;
+
 	RenderQueue();
 
+	void SetRenderTargets(TextureID* rts, uint count, TextureID depthRT);
+	void SetClear(bool clearRT, bool clearDepth, float4 clearColor, float depthClearVal);
+	void SetShaderData(ShaderData** shaderData, uint count);
+
 	template<typename T>
-	T& AddRenderCommand()
+	T& AddRenderCommand(const SortKeyType& sortKey, const RenderState* renderState)
 	{
+		static_assert(std::is_standard_layout<T>(), "Render command should have standard layout");
+
 		RenderFunc renderFunc = T::Render;
-		void* data = AddDrawCommand(sizeof(T), renderFunc);
+		void* data = AddDrawCommand(sizeof(T), renderFunc, renderState);
+		_sortingKeys[_currentCommand] = sortKey;
 		T* commandData = static_cast<T*>(data);
 		return *commandData;
 	}
-	
-	void SubmitAll(Renderer* renderer, StateHelper* stateHelper);
+
+	void Sort();
+	void SubmitAll(GraphicsDevice* gfxDevice, StateHelper* stateHelper);
+
+	TextureID GetRenderTarget(uint index) const;
+	TextureID GetDepthTarget() const;
+
+	static void DispatchCompute(StateHelper* stateHelper, const DispatchGroup& group, ShaderID shader, ShaderData** shaderData, uint numShaderData);
+
 private:
+	typedef std::pair<SortKeyType, RenderCommand> SortKeyPair;
+
 	uint GetAlignedOffset(uint size, uint alignment)
 	{
 		ASSERT(alignment != 0);
@@ -30,15 +57,28 @@ private:
 		return (size + alignment - 1) & alignMask;
 	}
 
-	void* AddDrawCommand(uint dataSize, RenderFunc renderFunc);
+	void* AddDrawCommand(uint dataSize, RenderFunc renderFunc, const RenderState* renderState);
 
-	static const uint BufferSize = 1024 * 16;
+	static const uint MaxCommands = 4096;
+	static const uint BufferSize = MaxCommands * 64;
+	static const uint MaxShaderDataPerQueue = 8;
+	static const uint MaxRenderTargets = 5;
+
 	std::vector<uint8> _buffer;
-
-	static const uint MaxCommands = 512;
 	RenderCommand _commands[MaxCommands];
-	uint _sortingKeys[MaxCommands];
+	SortKeyType _sortingKeys[MaxCommands];
 	uint _currentCommand;
+
+	ShaderData* _shaderData[MaxShaderDataPerQueue];
+	uint _numShaderData;
+	TextureID _renderTargets[MaxRenderTargets];
+	uint _numRenderTargets;
+	TextureID _depthRT;
+
+	bool _clearRT;
+	bool _clearDepth;
+	float4 _clearColor;
+	float _depthClearVal;
 };
 
 #endif // _RENDERER_QUEUE_H_

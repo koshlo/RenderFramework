@@ -284,7 +284,7 @@ static DXGI_FORMAT formats[] =
 	DXGI_FORMAT_BC5_UNORM,
 };
 
-Direct3D11Renderer::Direct3D11Renderer(ID3D11Device *d3ddev, ID3D11DeviceContext *ctx) : Renderer()
+Direct3D11Renderer::Direct3D11Renderer(ID3D11Device *d3ddev, ID3D11DeviceContext *ctx) : GraphicsDevice()
 {
 	device = d3ddev;
 	context = ctx;
@@ -454,7 +454,7 @@ Direct3D11Renderer::~Direct3D11Renderer()
 
 void Direct3D11Renderer::reset(const uint flags)
 {
-	Renderer::reset(flags);
+	GraphicsDevice::reset(flags);
 
 	if (flags & RESET_TEX)
 	{
@@ -493,7 +493,7 @@ void Direct3D11Renderer::reset(const uint flags)
 
 void Direct3D11Renderer::resetToDefaults()
 {
-	Renderer::resetToDefaults();
+	GraphicsDevice::resetToDefaults();
 
 	for (uint i = 0; i < MAX_TEXTUREUNIT; i++)
 	{

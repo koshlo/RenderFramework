@@ -8,24 +8,25 @@
 class RenderResourceLoader
 {
 public:
-	explicit RenderResourceLoader(Renderer& renderer) : _renderer(renderer) {};
+	explicit RenderResourceLoader(GraphicsDevice& gfxDevice) : _device(gfxDevice) {};
 
 	template <typename ResTrait>
-	Optional<typename ResTrait::ReturnType> SyncLoad(const ResourceId<ResTrait>& resId);
+	Optional<typename ResTrait::ReturnType> SyncLoad(const ResourceId<ResTrait>& resId) const;
 
 	template <typename ResTrait>
-	Optional<typename ResTrait::ReturnType> SyncLoad(const ResourceId<ResTrait>& resId, typename ResTrait::InfoType info);
+	Optional<typename ResTrait::ReturnType> SyncLoad(const ResourceId<ResTrait>& resId, typename ResTrait::InfoType info) const;
 
 	template <typename ResTrait>
-	void SyncLoad(const ResourceId<ResTrait>& resId, Optional<typename ResTrait::ReturnType>* result);
+	void SyncLoad(const ResourceId<ResTrait>& resId, Optional<typename ResTrait::ReturnType>* result) const;
 
 	template <typename ResTrait>
-	void SyncLoad(const ResourceId<ResTrait>& resId, typename ResTrait::InfoType info, Optional<typename ResTrait::ReturnType>* result);
+	void SyncLoad(const ResourceId<ResTrait>& resId, typename ResTrait::InfoType info, Optional<typename ResTrait::ReturnType>* result) const;
 
 	static const char* DataPath();
-
+	
+	GraphicsDevice& GetGraphicsDevice() const { return _device; }
 private:
-	Renderer& _renderer;
+	GraphicsDevice& _device;
 };
 
 #endif // _RESOURCE_LOADER_H_

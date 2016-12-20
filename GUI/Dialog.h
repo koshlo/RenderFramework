@@ -56,7 +56,7 @@ public:
 	bool onJoystickButton(const int button, const bool pressed);
 	void onButtonClicked(PushButton *button);
 
-	void draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
+	void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 
 protected:
 	void close();

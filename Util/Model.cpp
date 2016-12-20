@@ -1580,19 +1580,19 @@ void convertToShorts(const uint *src, int nIndices, const uint nVertices){
 	}
 }
 
-uint Model::makeDrawable(Renderer *renderer, const bool useCache, const ShaderID shader){
+uint Model::makeDrawable(GraphicsDevice *gfxDevice, const bool useCache, const ShaderID shader){
 	if (streams.getCount() == 0) return 0;
 
 	int vertexSize = getVertexSize();
 
 	if (useCache && lastVertices){
-		if ((vertexFormat = renderer->addVertexFormat(lastFormat, streams.getCount(), shader)) == VF_NONE) return 0;
-		if ((vertexBuffer = renderer->addVertexBuffer(lastVertexCount * vertexSize, STATIC, lastVertices)) == VB_NONE) return 0;
+		if ((vertexFormat = gfxDevice->addVertexFormat(lastFormat, streams.getCount(), shader)) == VF_NONE) return 0;
+		if ((vertexBuffer = gfxDevice->addVertexBuffer(lastVertexCount * vertexSize, STATIC, lastVertices)) == VB_NONE) return 0;
 
 		if (lastVertexCount > 65535){
-			if ((indexBuffer = renderer->addIndexBuffer(nIndices, 4, STATIC, lastIndices)) == IB_NONE) return 0;
+			if ((indexBuffer = gfxDevice->addIndexBuffer(nIndices, 4, STATIC, lastIndices)) == IB_NONE) return 0;
 		} else {
-			if ((indexBuffer = renderer->addIndexBuffer(nIndices, 2, STATIC, lastIndices)) == IB_NONE) return 0;
+			if ((indexBuffer = gfxDevice->addIndexBuffer(nIndices, 2, STATIC, lastIndices)) == IB_NONE) return 0;
 		}
 
 		return lastVertexCount;
@@ -1637,15 +1637,15 @@ uint Model::makeDrawable(Renderer *renderer, const bool useCache, const ShaderID
 			format[i].size   = streams[i].nComponents;
 		}
 
-		if ((vertexFormat = renderer->addVertexFormat(format, streams.getCount(), shader)) == VF_NONE) return 0;
-		if ((vertexBuffer = renderer->addVertexBuffer(nVertices * vertexSize, STATIC, vertices)) == VB_NONE) return 0;
+		if ((vertexFormat = gfxDevice->addVertexFormat(format, streams.getCount(), shader)) == VF_NONE) return 0;
+		if ((vertexBuffer = gfxDevice->addVertexBuffer(nVertices * vertexSize, STATIC, vertices)) == VB_NONE) return 0;
 
 		if (nVertices > 65535){
-			if ((indexBuffer = renderer->addIndexBuffer(nIndices, 4, STATIC, indices)) == IB_NONE) return 0;
+			if ((indexBuffer = gfxDevice->addIndexBuffer(nIndices, 4, STATIC, indices)) == IB_NONE) return 0;
 		} else {
 			convertToShorts(indices, nIndices, nVertices);
 
-			if ((indexBuffer = renderer->addIndexBuffer(nIndices, 2, STATIC, indices)) == IB_NONE) return 0;
+			if ((indexBuffer = gfxDevice->addIndexBuffer(nIndices, 2, STATIC, indices)) == IB_NONE) return 0;
 		}
 
 		delete aStreams;
@@ -1669,52 +1669,52 @@ uint Model::makeDrawable(Renderer *renderer, const bool useCache, const ShaderID
 	}
 }
 
-void Model::unmakeDrawable(Renderer *renderer){
-//	renderer->removeVertexFormat(indexBuffer);
-//	renderer->removeVertexBuffer(vertexBuffer);
-//	renderer->removeIndexBuffer(indexBuffer);
+void Model::unmakeDrawable(GraphicsDevice *gfxDevice){
+//	gfxDevice->removeVertexFormat(indexBuffer);
+//	gfxDevice->removeVertexBuffer(vertexBuffer);
+//	gfxDevice->removeIndexBuffer(indexBuffer);
 }
 
-void Model::setBuffers(Renderer *renderer){
-	renderer->setVertexFormat(vertexFormat);
-	renderer->setVertexBuffer(0, vertexBuffer);
-	renderer->setIndexBuffer(indexBuffer);
+void Model::setBuffers(GraphicsDevice *gfxDevice){
+	gfxDevice->setVertexFormat(vertexFormat);
+	gfxDevice->setVertexBuffer(0, vertexBuffer);
+	gfxDevice->setIndexBuffer(indexBuffer);
 }
 
-void Model::draw(Renderer *renderer){
+void Model::draw(GraphicsDevice *gfxDevice) const {
 	ASSERT(vertexBuffer != VB_NONE);
 	ASSERT(indexBuffer  != IB_NONE);
 
-	renderer->changeVertexFormat(vertexFormat);
-	renderer->changeVertexBuffer(0, vertexBuffer);
-	renderer->changeIndexBuffer(indexBuffer);
+	gfxDevice->changeVertexFormat(vertexFormat);
+	gfxDevice->changeVertexBuffer(0, vertexBuffer);
+	gfxDevice->changeIndexBuffer(indexBuffer);
 
-	renderer->drawElements(PRIM_TRIANGLES, 0, nIndices, 0, lastVertexCount);
+	gfxDevice->drawElements(PRIM_TRIANGLES, 0, nIndices, 0, lastVertexCount);
 }
 
-void Model::drawBatch(Renderer *renderer, const uint batch){
+void Model::drawBatch(GraphicsDevice *gfxDevice, const uint batch) const {
 	ASSERT(vertexBuffer != VB_NONE);
 	ASSERT(indexBuffer  != IB_NONE);
 
-	renderer->changeVertexFormat(vertexFormat);
-	renderer->changeVertexBuffer(0, vertexBuffer);
-	renderer->changeIndexBuffer(indexBuffer);
+	gfxDevice->changeVertexFormat(vertexFormat);
+	gfxDevice->changeVertexBuffer(0, vertexBuffer);
+	gfxDevice->changeIndexBuffer(indexBuffer);
 
-	renderer->drawElements(PRIM_TRIANGLES, batches[batch].startIndex, batches[batch].nIndices, batches[batch].startVertex, batches[batch].nVertices);
+	gfxDevice->drawElements(PRIM_TRIANGLES, batches[batch].startIndex, batches[batch].nIndices, batches[batch].startVertex, batches[batch].nVertices);
 }
 
-void Model::drawSubBatch(Renderer *renderer, const uint batch, const uint first, const uint count){
+void Model::drawSubBatch(GraphicsDevice *gfxDevice, const uint batch, const uint first, const uint count) const {
 	ASSERT(vertexBuffer != VB_NONE);
 	ASSERT(indexBuffer  != IB_NONE);
 
-	renderer->changeVertexFormat(vertexFormat);
-	renderer->changeVertexBuffer(0, vertexBuffer);
-	renderer->changeIndexBuffer(indexBuffer);
+	gfxDevice->changeVertexFormat(vertexFormat);
+	gfxDevice->changeVertexBuffer(0, vertexBuffer);
+	gfxDevice->changeIndexBuffer(indexBuffer);
 
 	int startIndex = batches[batch].startIndex + first;
 	int indexCount = min(count, batches[batch].nIndices - first);
 
-	renderer->drawElements(PRIM_TRIANGLES, startIndex, indexCount, batches[batch].startVertex, batches[batch].nVertices);
+	gfxDevice->drawElements(PRIM_TRIANGLES, startIndex, indexCount, batches[batch].startVertex, batches[batch].nVertices);
 }
 
 uint *Model::getArrayIndices(const uint nVertices){

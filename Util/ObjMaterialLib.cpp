@@ -2,16 +2,23 @@
 #include "Tokenizer.h"
 #include "ParsingHelpers.h"
 
-bool SetMaterialProperty(char propChar, Tokenizer& tok, Material* destMaterial);
-bool SetMaterialMapProperty(const char* currentTok, Tokenizer& tok, Material* destMaterial);
-bool SetMaterialProperty(char propChar, Tokenizer& tok, PBRMaterial* destMaterial);
-bool SetMaterialMapProperty(const char* currentTok, Tokenizer& tok, PBRMaterial* destMaterial);
+#include "../Shaders/Material.data.fx"
+
+struct ObjMaterialLib::MaterialDataHolder
+{
+	typedef ArrayMap<std::string, MaterialShaderData> MaterialDataMap;
+
+	MaterialDataMap materialDataMap;
+};
+
+bool SetMaterialProperty(const std::string& prop, Tokenizer& tok, Material* destMaterial);
+bool SetMaterialMapProperty(const std::string& currentTok, Tokenizer& tok, Material* destMaterial);
 
 template <>
-void RenderResourceLoader::SyncLoad(const MaterialLibResId& matLibId, bool isPbr, Optional<ObjMaterialLib>* resultLib)
+void RenderResourceLoader::SyncLoad(const MaterialLibResId& matLibId, Optional<ObjMaterialLib>* resultLib) const
 {
 	ObjMaterialLib lib(*this);
-	if (lib.load(matLibId, isPbr))
+	if (lib.load(matLibId))
 	{
 		*resultLib = std::move(lib);
 	}
@@ -21,12 +28,6 @@ template <>
 Material& ObjMaterialLib::addMaterial(const MaterialResId& defaultMatId)
 {
 	return _materialMap.add(defaultMatId, Material());
-}
-
-template <>
-PBRMaterial& ObjMaterialLib::addMaterial(const PBRMaterialResId& pbrMatId)
-{
-	return _pbrMaterialMap.add(pbrMatId, PBRMaterial());
 }
 
 template<typename MatType>
@@ -57,8 +58,9 @@ bool ObjMaterialLib::loadMaterial(const MaterialLibResId& matLibId)
 			break;
 		}
 		case 'K':
+		case 'N':
 		{
-			success = SetMaterialProperty(str[1], tok, lastMaterial);
+			success = SetMaterialProperty(str, tok, lastMaterial);
 			break;
 		}
 		case 'm':
@@ -76,11 +78,27 @@ bool ObjMaterialLib::loadMaterial(const MaterialLibResId& matLibId)
 
 	if (success)
 	{
-		std::for_each(_materialMap.values().cbegin(), _materialMap.values().cend(), [this](const Material& mat)
+		std::for_each(_materialMap.values().begin(), _materialMap.values().end(), [this](const Material& mat)
 		{
-			loadTexture(mat.diffuseMap);
-			loadTexture(mat.bumpMap);
+			loadTexture(mat.albedoMap);
+			loadTexture(mat.metallicMap);
+			loadTexture(mat.normalMap);
+			loadTexture(mat.roughnessMap);
 		});
+
+		for (uint32_t i = 0; i < _materialMap.keys().size(); ++i)
+		{
+			const MaterialResId& matId = _materialMap.keys()[i];
+			const Material& material = _materialMap.values()[i];
+
+			MaterialShaderData matShaderData;
+			matShaderData.SetAlbedoMap(getTexture(material.albedoMap));
+			matShaderData.SetNormalMap(getTexture(material.normalMap));
+			matShaderData.SetMetallicMap(getTexture(material.metallicMap));
+			matShaderData.SetRoughnessMap(getTexture(material.roughnessMap));
+
+			_materialDataHolder->materialDataMap.add(matId.getId(), matShaderData);
+		}
 	}
 	else
 	{
@@ -88,49 +106,33 @@ bool ObjMaterialLib::loadMaterial(const MaterialLibResId& matLibId)
 		sprintf(str, "Couldn't parse material \"%s\"", fileName);
 		ErrorMsg(str);
 	}
+
+	
+
 	return success;
 }
 
-bool ObjMaterialLib::load(const MaterialLibResId &matLibId, bool isPbr)
+ObjMaterialLib::ObjMaterialLib(const RenderResourceLoader& resourceLoader) 
+	: _resourceLoader(resourceLoader)
+	, _materialDataHolder(new MaterialDataHolder)
 {
-	bool result;
-	if (isPbr)
-	{
-		result = loadMaterial<PBRMaterial>(matLibId);
-	}
-	else
-	{
-		result = loadMaterial<Material>(matLibId);
-	}
-	return result;
 }
 
-void ObjMaterialLib::applyMaterial(const std::string& name, Renderer* renderer)
+ObjMaterialLib::~ObjMaterialLib() = default;
+
+bool ObjMaterialLib::load(const MaterialLibResId &matLibId)
 {
-	if (_isPBR)
-	{
-		applyMaterial(MaterialResId(name), renderer);
-	}
-	else
-	{
-		applyMaterial(PBRMaterialResId(name), renderer);
-	}
+	return loadMaterial<Material>(matLibId);
 }
 
-
-void ObjMaterialLib::applyMaterial(const MaterialResId& matId, Renderer* renderer)
+const MaterialShaderData& ObjMaterialLib::getMaterialShaderData(const std::string& matName) const
 {
-	MaterialOptRef material = getMaterial(matId);
-	ASSERT(material);
-	renderer->setShaderConstant3f("MaterialDiffuse", material.getVal().diffuse);
-	renderer->applyConstants();
+	return _materialDataHolder->materialDataMap[matName];
 }
 
-void ObjMaterialLib::applyMaterial(const PBRMaterialResId& matId, Renderer* renderer)
+MaterialShaderData* ObjMaterialLib::getMaterialShaderData(const std::string& matName)
 {
-	PBRMaterialOptRef material = getMaterial(matId);
-	ASSERT(material);
-
+	return _materialDataHolder->materialDataMap.getPtrFor(matName);
 }
 
 const ObjMaterialLib::MaterialOptRef ObjMaterialLib::getMaterial(const MaterialResId& name) const
@@ -143,19 +145,14 @@ const ObjMaterialLib::MaterialOptRef ObjMaterialLib::getMaterial(const MaterialR
 	return ObjMaterialLib::MaterialOptRef();
 }
 
-const ObjMaterialLib::PBRMaterialOptRef ObjMaterialLib::getMaterial(const PBRMaterialResId& name) const
+TextureID ObjMaterialLib::getTexture(const TextureResId& name, TextureID defaultTexture) const
 {
-	PBRMaterialMap::KeyIterator it = _pbrMaterialMap.getIterator(name);
-	if (_pbrMaterialMap.isInRange(it))
+	TextureMap::KeyIterator it = _loadedTextures.getIterator(name);
+	if (_loadedTextures.isInRange(it))
 	{
-		return ObjMaterialLib::PBRMaterialOptRef(_pbrMaterialMap.getValue(it));
+		return _loadedTextures.getValue(it);
 	}
-	return PBRMaterialOptRef();
-}
-
-Optional<TextureID> ObjMaterialLib::getTexture(const TextureResId & name) const
-{
-	return Optional<TextureID>();
+	return defaultTexture;
 }
 
 void ObjMaterialLib::loadTexture(const TextureResId& name)
@@ -170,75 +167,49 @@ void ObjMaterialLib::loadTexture(const TextureResId& name)
 	}
 }
 
-bool SetMaterialProperty(char propChar, Tokenizer& tok, Material* destMaterial)
-{
-	switch (propChar)
-	{
-	case 'd':
-		destMaterial->diffuse = readVector3(tok);
-		break;
-	case 'a':
-		destMaterial->ambient = readVector3(tok);
-		break;
-	default:
-		break;
-	}
-	return true;
-}
-
 bool isFilePath(const char ch)
 {
 	return isAlphabetical(ch) || ch == '\\' || ch == '.';
 }
 
-bool SetMaterialMapProperty(const char* currentTok, Tokenizer& tok, Material* destMaterial)
+bool SetMaterialProperty(const std::string& prop, Tokenizer& tok, Material* destMaterial)
 {
-	static const uint32_t MaxTokLen = 64;
-	TextureResId textureRes(tok.next(isFilePath));
-	bool validProperty = textureRes.isValid();
-	if (validProperty)
+	static const uint32_t MaxTokLen = 2;
+	if (prop == "Kd")
 	{
-		if (::strncmp(currentTok, "map_Kd", MaxTokLen) == 0)
-		{
-			destMaterial->diffuseMap = TextureResId(tok.next(isFilePath));
-		}
-		else if (::strncmp(currentTok, "map_bump", MaxTokLen) == 0)
-		{
-			destMaterial->bumpMap = TextureResId(tok.next(isFilePath));
-		}
-		/*else
-		{
-			validProperty = false;
-		}*/
+		destMaterial->albedo = readVector3(tok);
 	}
-	return validProperty;
-}
-
-bool SetMaterialProperty(char propChar, Tokenizer& tok, PBRMaterial* destMaterial)
-{
+	else if (prop == "Ka")
+	{
+		destMaterial->metallic = readVector3(tok).x;
+	}
+	else if (prop == "Ns")
+	{
+		destMaterial->roughness = readFloat(tok);
+	}
 	return true;
 }
 
-bool SetMaterialMapProperty(const char* currentTok, Tokenizer& tok, PBRMaterial* destMaterial)
+bool SetMaterialMapProperty(const std::string& currentTok, Tokenizer& tok, Material* destMaterial)
 {
 	static const uint32_t MaxTokLen = 64;
 	TextureResId textureRes(tok.next(isFilePath));
 	bool validProperty = textureRes.isValid();
 	if (validProperty)
 	{
-		if (::strncmp(currentTok, "map_Kd", MaxTokLen) == 0)
+		if (currentTok == "map_Kd")
 		{
 			destMaterial->albedoMap = textureRes;
 		}
-		else if (::strncmp(currentTok, "map_bump", MaxTokLen) == 0)
+		else if (currentTok == "map_bump")
 		{
 			destMaterial->normalMap = textureRes;
 		}
-		else if (::strncmp(currentTok, "map_Ka", MaxTokLen) == 0)
+		else if (currentTok == "map_Ka")
 		{
 			destMaterial->metallicMap = textureRes;
 		}
-		else if (::strncmp(currentTok, "map_Ns", MaxTokLen) == 0)
+		else if (currentTok == "map_Ns")
 		{
 			destMaterial->roughnessMap = textureRes;
 		}

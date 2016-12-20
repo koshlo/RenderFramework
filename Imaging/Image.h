@@ -339,7 +339,7 @@ public:
 
 protected:
 	unsigned char *pixels;
-	int width, height, depth;
+	uint width, height, depth;
 	int nMipMaps;
 	int arraySize;
 	FORMAT format;

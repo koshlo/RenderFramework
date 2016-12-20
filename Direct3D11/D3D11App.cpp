@@ -28,7 +28,7 @@
 D3D11App::D3D11App()
 {
 	swapChain = NULL;
-	device = NULL;
+	gfxDevice = NULL;
 	context = NULL;
 
 	backBuffer  = NULL;
@@ -42,7 +42,7 @@ D3D11App::D3D11App()
 
 bool D3D11App::initCaps()
 {
-	renderer = NULL;
+	gfxDevice = NULL;
 	return true;
 }
 
@@ -70,8 +70,8 @@ void D3D11App::exitAPI()
 {
 	deleteBuffers();
 
-	delete renderer;
-	renderer = NULL;
+	delete gfxDevice;
+	gfxDevice = NULL;
 
 	if (swapChain)
 	{
@@ -88,9 +88,9 @@ void D3D11App::exitAPI()
 		context = NULL;
 	}
 
-	if (device)
+	if (nativeDevice)
 	{
-		ULONG count = device->Release();
+		ULONG count = nativeDevice->Release();
 #ifdef _DEBUG
 		if (count)
 		{
@@ -99,7 +99,7 @@ void D3D11App::exitAPI()
 			outputDebugString(str);
 		}
 #endif
-		device = NULL;
+		nativeDevice = NULL;
 	}
 
 	DestroyWindow(hwnd);
@@ -224,7 +224,7 @@ bool D3D11App::initAPI(const API_Revision api_revision, const DXGI_FORMAT backBu
 
 	D3D_FEATURE_LEVEL requested_feature_level = (api_revision == D3D11)? D3D_FEATURE_LEVEL_11_0 : (api_revision == D3D10_1)? D3D_FEATURE_LEVEL_10_1 : D3D_FEATURE_LEVEL_10_0;
 	D3D_FEATURE_LEVEL feature_level;
-	if (FAILED(D3D11CreateDevice(dxgiAdapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, deviceFlags, &requested_feature_level, 1, D3D11_SDK_VERSION, &device, &feature_level, &context)))
+	if (FAILED(D3D11CreateDevice(dxgiAdapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, deviceFlags, &requested_feature_level, 1, D3D11_SDK_VERSION, &nativeDevice, &feature_level, &context)))
 	{
 		ErrorMsg("Couldn't create D3D11 device");
 		return false;
@@ -233,7 +233,7 @@ bool D3D11App::initAPI(const API_Revision api_revision, const DXGI_FORMAT backBu
 	while (msaaSamples > 0)
 	{
 		UINT nQuality;
-		if (SUCCEEDED(device->CheckMultisampleQualityLevels(backBufferFormat, msaaSamples, &nQuality)) && nQuality > 0)
+		if (SUCCEEDED(nativeDevice->CheckMultisampleQualityLevels(backBufferFormat, msaaSamples, &nQuality)) && nQuality > 0)
 		{
 			if ((flags & NO_SETTING_CHANGE) == 0) antiAliasSamples = msaaSamples;
 			break;
@@ -258,7 +258,7 @@ bool D3D11App::initAPI(const API_Revision api_revision, const DXGI_FORMAT backBu
 	sd.SampleDesc.Count = msaaSamples;
 	sd.SampleDesc.Quality = 0;
 
-	if (FAILED(dxgiFactory->CreateSwapChain(device, &sd, &swapChain)))
+	if (FAILED(dxgiFactory->CreateSwapChain(nativeDevice, &sd, &swapChain)))
 	{
 		ErrorMsg("Couldn't create swapchain");
 		return false;
@@ -276,23 +276,23 @@ bool D3D11App::initAPI(const API_Revision api_revision, const DXGI_FORMAT backBu
 		captureMouse(!configDialog->isVisible());
 	}
 
-	renderer = new Direct3D11Renderer(device, context);
+	gfxDevice = new Direct3D11Renderer(nativeDevice, context);
 
 	if (!createBuffers(sampleBackBuffer))
 	{
-		delete renderer;
+		delete gfxDevice;
 		return false;
 	}
 	antiAlias->selectItem(antiAliasSamples / 2);
 
-	linearClamp = renderer->addSamplerState(LINEAR, CLAMP, CLAMP, CLAMP);
-	defaultFont = renderer->addFont("../Textures/Fonts/Future.dds", "../Textures/Fonts/Future.font", linearClamp);
-	blendSrcAlpha = renderer->addBlendState(SRC_ALPHA, ONE_MINUS_SRC_ALPHA);
-	noDepthTest  = renderer->addDepthState(false, false);
-	noDepthWrite = renderer->addDepthState(true,  false);
-	cullNone  = renderer->addRasterizerState(CULL_NONE);
-	cullBack  = renderer->addRasterizerState(CULL_BACK);
-	cullFront = renderer->addRasterizerState(CULL_FRONT);
+	linearClamp = gfxDevice->addSamplerState(LINEAR, CLAMP, CLAMP, CLAMP);
+	defaultFont = gfxDevice->addFont("../Textures/Fonts/Future.dds", "../Textures/Fonts/Future.font", linearClamp);
+	blendSrcAlpha = gfxDevice->addBlendState(SRC_ALPHA, ONE_MINUS_SRC_ALPHA);
+	noDepthTest  = gfxDevice->addDepthState(false, false);
+	noDepthWrite = gfxDevice->addDepthState(true,  false);
+	cullNone  = gfxDevice->addRasterizerState(CULL_NONE);
+	cullBack  = gfxDevice->addRasterizerState(CULL_BACK);
+	cullFront = gfxDevice->addRasterizerState(CULL_FRONT);
 
 	return true;
 }
@@ -302,12 +302,12 @@ bool D3D11App::createBuffers(const bool sampleBackBuffer)
 	if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID *) &backBuffer))) 
 		return false;
 
-	if (FAILED(device->CreateRenderTargetView(backBuffer, NULL, &backBufferRTV)))
+	if (FAILED(nativeDevice->CreateRenderTargetView(backBuffer, NULL, &backBufferRTV)))
 		return false;
 
 	if (sampleBackBuffer)
 	{
-		if ((backBufferTexture = ((Direct3D11Renderer *) renderer)->addTexture(backBuffer)) == TEXTURE_NONE)
+		if ((backBufferTexture = (static_cast<Direct3D11Renderer*>(gfxDevice))->addTexture(backBuffer)) == TEXTURE_NONE)
 			return false;
 		backBuffer->AddRef();
 	}
@@ -328,7 +328,7 @@ bool D3D11App::createBuffers(const bool sampleBackBuffer)
 		descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 		descDepth.CPUAccessFlags = 0;
 		descDepth.MiscFlags = 0;
-		if (FAILED(device->CreateTexture2D(&descDepth, NULL, &depthBuffer)))
+		if (FAILED(nativeDevice->CreateTexture2D(&descDepth, NULL, &depthBuffer)))
 		{
 			ErrorMsg("Couldn't create main depth buffer");
 			return false;
@@ -339,7 +339,7 @@ bool D3D11App::createBuffers(const bool sampleBackBuffer)
 		descDSV.Format = descDepth.Format;
 		descDSV.ViewDimension = msaaSamples > 1? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
 		descDSV.Texture2D.MipSlice = 0;
-		if (FAILED(device->CreateDepthStencilView(depthBuffer, &descDSV, &depthBufferDSV)))
+		if (FAILED(nativeDevice->CreateDepthStencilView(depthBuffer, &descDSV, &depthBufferDSV)))
 			return false;
 	}
 
@@ -355,7 +355,7 @@ bool D3D11App::createBuffers(const bool sampleBackBuffer)
 	viewport.TopLeftY = 0;
 	context->RSSetViewports(1, &viewport);
 
-	((Direct3D11Renderer *) renderer)->setFrameBuffer(backBufferRTV, depthBufferDSV);
+	((Direct3D11Renderer *) gfxDevice)->setFrameBuffer(backBufferRTV, depthBufferDSV);
 
 	return true;
 }
@@ -367,7 +367,7 @@ bool D3D11App::deleteBuffers()
 
 	if (backBufferTexture != TEXTURE_NONE)
 	{
-		renderer->removeTexture(backBufferTexture);
+		gfxDevice->removeTexture(backBufferTexture);
 		backBufferTexture = TEXTURE_NONE;
 	}
 
@@ -381,7 +381,7 @@ bool D3D11App::deleteBuffers()
 
 void D3D11App::beginFrame()
 {
-	renderer->setViewport(width, height);
+	gfxDevice->setViewport(width, height);
 }
 
 void D3D11App::endFrame()
@@ -393,7 +393,7 @@ void D3D11App::onSize(const int w, const int h)
 {
 	BaseApp::onSize(w, h);
 
-	if (device != NULL)
+	if (nativeDevice != NULL)
 	{
 		const bool sampleBackBuffer = (backBufferTexture != TEXTURE_NONE);
 
@@ -421,7 +421,7 @@ bool D3D11App::captureScreenshot(Image &img)
 	bool result = false;
 
 	ID3D11Texture2D *texture;
-	if (SUCCEEDED(device->CreateTexture2D(&desc, NULL, &texture)))
+	if (SUCCEEDED(nativeDevice->CreateTexture2D(&desc, NULL, &texture)))
 	{
 		if (msaaSamples > 1)
 		{
@@ -429,7 +429,7 @@ bool D3D11App::captureScreenshot(Image &img)
 			desc.Usage = D3D11_USAGE_DEFAULT;
 			desc.CPUAccessFlags = 0;
 
-			if (SUCCEEDED(device->CreateTexture2D(&desc, NULL, &resolved)))
+			if (SUCCEEDED(nativeDevice->CreateTexture2D(&desc, NULL, &resolved)))
 			{
 				context->ResolveSubresource(resolved, 0, backBuffer, 0, desc.Format);
 				context->CopyResource(texture, resolved);

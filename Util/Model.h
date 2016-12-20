@@ -115,14 +115,14 @@ public:
 	void optimizeStream(const StreamID streamID);
 	uint assemble(const StreamID *aStreams, const uint nStreams, float **destVertices, uint **destIndices, bool separateArrays);
 
-	uint makeDrawable(Renderer *renderer, const bool useCache = true, const ShaderID shader = SHADER_NONE);
-	void unmakeDrawable(Renderer *renderer);
+	uint makeDrawable(GraphicsDevice *gfxDevice, const bool useCache = true, const ShaderID shader = SHADER_NONE);
+	void unmakeDrawable(GraphicsDevice *gfxDevice);
 
-	void setBuffers(Renderer *renderer);
+	void setBuffers(GraphicsDevice *gfxDevice);
 
-	void draw(Renderer *renderer);
-	void drawBatch(Renderer *renderer, const uint batch);
-	void drawSubBatch(Renderer *renderer, const uint batch, const uint first, const uint count);
+	void draw(GraphicsDevice *gfxDevice) const;
+	void drawBatch(GraphicsDevice *gfxDevice, const uint batch) const;
+	void drawSubBatch(GraphicsDevice *gfxDevice, const uint batch, const uint first, const uint count) const;
 
 	static uint *getArrayIndices(const uint nVertices);
 protected:

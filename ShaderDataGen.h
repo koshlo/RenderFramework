@@ -4,6 +4,8 @@
 #define GENERATE_ACCESSORS 2
 #define GENERATE_APPLY 3
 
+#include "ShaderData.h"
+
 class SHADER_DATA_NAME : public ShaderData
 {
 public:
@@ -12,6 +14,8 @@ public:
 #define GENERATION_PASS GENERATE_APPLY
 #include "ShaderDataGen.def"
 		SHADER_PARAM_LIST
+		stateHelper->ApplyConstants();
+		stateHelper->ApplyTextures();
 	}
 
 #undef GENERATION_PASS
@@ -26,14 +30,27 @@ private:
 	SHADER_PARAM_LIST
 };
 
+#undef SHADER_DATA_NAME
+#undef SHADER_PARAM_LIST
+#undef GENERATION_PASS
+
 #else // __cplusplus
 
-#define CONSTANT_2F(Name) float2 _##Name
-#define CONSTANT_4F(Name) float4 _##Name
-#define CONSTANT_MATRIX_4F(Name) float4x4 _##Name
-#define TEXTURE_2D(Name, Type) Texture2D<Type> _##Name
-#define TEXTURE_3D(Name, Type) Texture3D<Type> _##Name
-#define SAMPLER_STATE(Name) SamplerStateID _##Name
-#define UAV_TEXTURE2D(Name) RWTexture _##Name
+#ifndef _SHADER_DATA_GEN_H_
+#define _SHADER_DATA_GEN_H_
+
+#define CONSTANT(Name, Type) Type Name
+#define CONSTANT_ARRAY(Name, Type, Size) Type Name[Size]
+#define TEXTURE_2D(Name, Type) Texture2D<Type> Name
+#define TEXTURE_3D(Name, Type) Texture3D<Type> Name
+#define SAMPLER_STATE(Name) SamplerState Name
+#define UAV_TEXTURE_2D(Name, Type) RWTexture2D<Type> Name
+
+#endif // !_SHADER_DATA_GEN_H_
+
+SHADER_PARAM_LIST
+
+#undef SHADER_DATA_NAME
+#undef SHADER_PARAM_LIST
 
 #endif // __cplusplus

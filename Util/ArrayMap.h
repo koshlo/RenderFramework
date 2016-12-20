@@ -19,6 +19,12 @@ public:
 		return getValue(getIterator(key));
 	}
 
+	V* getPtrFor(const K& key)
+	{
+		ASSERT(_keys.size() == _values.size());
+		return &( getValue(getIterator(key)) );
+	}
+
 	KeyIterator getIterator(const K& key) const
 	{
 		return std::find(_keys.cbegin(), _keys.cend(), key);
@@ -34,6 +40,11 @@ public:
 		return _values[indexOf(it)];
 	}
 
+	V& getValue(KeyIterator& it)
+	{
+		return _values[indexOf(it)];
+	}
+
 	V& add(const K& key, const V& value)
 	{
 		ASSERT(_keys.size() == _values.size());
@@ -43,6 +54,7 @@ public:
 	}
 
 	const ValueList& values() const { return _values; }
+	const KeyList& keys() const { return _keys; }
 
 private:	
 	uint32_t indexOf(KeyIterator& it) const

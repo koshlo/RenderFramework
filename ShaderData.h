@@ -3,12 +3,12 @@
 
 #ifdef __cplusplus
 
-class StateHelper;
+#include "StateHelper.h"
 
 class ShaderData
 {
 public:
-	virtual void Apply(StateHelper* stateHelper) const;
+	virtual void Apply(StateHelper* stateHelper) const = 0;
 };
 
 #endif // __cplusplus

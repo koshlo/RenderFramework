@@ -20,6 +20,7 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "BaseApp.h"
+#include "StateHelper.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -104,6 +105,17 @@ void BaseApp::loadConfig(){
 	invertYTurnAxis = config.getBoolDef("TurnYAxisInvert", true);
 
 	optionsButton = config.getIntegerDef("OptionsButton", 7);
+}
+
+bool BaseApp::postInitAPI()
+{
+	stateHelper = new StateHelper(gfxDevice);
+	return true;
+}
+
+void BaseApp::beforeExitAPI()
+{
+	delete stateHelper;
 }
 
 void BaseApp::initGUI(){
@@ -280,7 +292,7 @@ void BaseApp::onButtonClicked(PushButton *button){
 
 void BaseApp::drawGUI(){
 	//switchTo2DMode(false);
-	renderer->setup2DMode(0, (float) width, 0, (float) height);
+	gfxDevice->setup2DMode(0, (float) width, 0, (float) height);
 
 	if (widgets.goToLast()){
 		// Draw widgets back to front
@@ -291,7 +303,7 @@ void BaseApp::drawGUI(){
 				delete widget;
 				widgets.removeCurrent();
 			} else if (widget->isVisible()){
-				widget->draw(renderer, defaultFont, linearClamp, blendSrcAlpha, noDepthTest);
+				widget->draw(gfxDevice, defaultFont, linearClamp, blendSrcAlpha, noDepthTest);
 			}
 		} while (widgets.goToPrev());
 	}
@@ -312,13 +324,13 @@ void BaseApp::drawGUI(){
 		char str[16];
 		sprintf(str, "%d", fps);
 
-		renderer->drawText(str, 8, 8, 30, 38, defaultFont, linearClamp, blendSrcAlpha, noDepthTest);
+		gfxDevice->drawText(str, 8, 8, 30, 38, defaultFont, linearClamp, blendSrcAlpha, noDepthTest);
 	}
 
 #ifdef PROFILE
-	const char *profileString = renderer->getProfileString();
+	const char *profileString = gfxDevice->getProfileString();
 	if (profileString[0]){
-		renderer->drawText(profileString, 8, 80, 20, 24, defaultFont, linearClamp, blendSrcAlpha, noDepthTest);
+		gfxDevice->drawText(profileString, 8, 80, 20, 24, defaultFont, linearClamp, blendSrcAlpha, noDepthTest);
 	}
 #endif
 }
@@ -342,11 +354,11 @@ void BaseApp::updateTime(){
 void BaseApp::makeFrame(){
 	if (!configDialog->isVisible()) controls();
 
-	renderer->resetStatistics();
+	gfxDevice->resetStatistics();
 
 #ifdef PROFILE
 	if (keys[KEY_F11]){
-		renderer->profileFrameStart(frameTime);
+		gfxDevice->profileFrameStart(frameTime);
 	}
 #endif
 
@@ -356,7 +368,7 @@ void BaseApp::makeFrame(){
 	endFrame();
 
 #ifdef PROFILE
-	renderer->profileFrameEnd();
+	gfxDevice->profileFrameEnd();
 #endif
 
 
@@ -695,6 +707,7 @@ void BaseApp::closeWindow(const bool quit, const bool callUnLoad){
 		onClose();
 		unload();
 	}
+	beforeExitAPI();
 	exitAPI();
 
 	Widget::clean();

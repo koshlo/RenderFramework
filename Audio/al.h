@@ -386,7 +386,7 @@ typedef void ALvoid;
 #if !defined(AL_NO_PROTOTYPES)
 
 /*
- * Renderer State management
+ * GraphicsDevice State management
  */
 AL_API void AL_APIENTRY alEnable( ALenum capability );
 

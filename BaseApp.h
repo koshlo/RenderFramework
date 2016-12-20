@@ -35,6 +35,8 @@
 #endif
 #endif
 
+class StateHelper;
+
 class BaseApp : public SliderListener, public CheckBoxListener, public DropDownListener, public PushButtonListener {
 public:
 	BaseApp();
@@ -54,6 +56,9 @@ public:
 
 	virtual bool initCaps() = 0;
 	virtual bool initAPI() = 0;
+	virtual bool postInitAPI();
+
+	virtual void beforeExitAPI();
 	virtual void exitAPI() = 0;
 
 	void initGUI();
@@ -93,7 +98,7 @@ public:
 #if defined(_WIN32)
 	void setInstance(const HINSTANCE hInst){ hInstance = hInst; }
 	HWND getWindow() const { return hwnd; }
-	DISPLAY_DEVICE device;
+	DISPLAY_DEVICE displayDevice;
 #elif defined(LINUX)
 	void setDisplay(Display *disp){ display = disp; }
 #elif defined(__APPLE__)
@@ -109,7 +114,8 @@ public:
 protected:
 	void setWindowTitle(const char *title);
 
-	Renderer *renderer;
+	GraphicsDevice* gfxDevice;
+	StateHelper* stateHelper;
 
 	vec3 camPos;
 	float wx, wy;

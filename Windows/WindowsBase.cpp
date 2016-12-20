@@ -28,6 +28,17 @@
 #include <mmsystem.h>
 #pragma comment (lib, "winmm.lib")
 
+// Hack for unresolved external symbol in libjpeg for VS 2015
+// caused by linking against old CRT
+extern "C"
+{
+	FILE _iob[] = { *stdin, *stdout, *stderr };
+
+	FILE* __cdecl __iob_func(void)
+	{
+		return _iob;
+	}
+}
 
 extern BaseApp *app;
 
@@ -225,6 +236,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 			if (!app->initCaps()) break;
 			if (!app->initAPI()) break;
+			if (!app->postInitAPI()) break;
 
 			if (!app->load()){
 				app->closeWindow(true, false);

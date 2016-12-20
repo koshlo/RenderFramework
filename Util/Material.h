@@ -14,20 +14,10 @@ typedef ResourceId<TextureResTrait> TextureResId;
 
 struct Material
 {
-	Material() : ambient(0), diffuse(0), specular(0), specExponent(0) {}
+	float3 albedo;
+	float roughness;
+	float metallic;
 
-	float3 ambient;
-	float3 diffuse;
-	float3 specular;
-	float specExponent;
-
-	TextureResId ambientMap;
-	TextureResId diffuseMap;
-	TextureResId bumpMap;
-};
-
-struct PBRMaterial
-{
 	TextureResId albedoMap;
 	TextureResId normalMap;
 	TextureResId roughnessMap;
@@ -41,10 +31,9 @@ struct MaterialTraits
 };
 
 typedef ResourceId<MaterialTraits<Material>> MaterialResId;
-typedef ResourceId<MaterialTraits<PBRMaterial>> PBRMaterialResId;
 
 template <>
-Optional<TextureID> RenderResourceLoader::SyncLoad(const TextureResId& resId);
+Optional<TextureID> RenderResourceLoader::SyncLoad(const TextureResId& resId) const;
 
 
 #endif // _MATERIAL_H_

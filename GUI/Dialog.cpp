@@ -259,8 +259,8 @@ void Dialog::onButtonClicked(PushButton *button){
 	close();
 }
 
-void Dialog::draw(Renderer *renderer, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
-	drawSoftBorderQuad(renderer, linearClamp, blendSrcAlpha, depthState, xPos, yPos, xPos + width, yPos + height, borderWidth, 1, 1);
+void Dialog::draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){
+	drawSoftBorderQuad(gfxDevice, linearClamp, blendSrcAlpha, depthState, xPos, yPos, xPos + width, yPos + height, borderWidth, 1, 1);
 
 	vec4 black(0, 0, 0, 1);
 	vec4 blue(0.3f, 0.4f, 1.0f, 0.65f);
@@ -269,26 +269,26 @@ void Dialog::draw(Renderer *renderer, const FontID defaultFont, const SamplerSta
 	float y = yPos + 2 * borderWidth;
 	for (uint i = 0; i < tabs.getCount(); i++){
 		float tabWidth = 0.75f * tabHeight;
-		float cw = renderer->getTextWidth(defaultFont, tabs[i]->caption);
+		float cw = gfxDevice->getTextWidth(defaultFont, tabs[i]->caption);
 		float newX = x + tabWidth * cw + 6;
 
 		if (i == currTab){
 			vec2 quad[] = { MAKEQUAD(x, y, newX, y + tabHeight, 2) };
-			renderer->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), blendSrcAlpha, depthState, &blue);
+			gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, quad, elementsOf(quad), blendSrcAlpha, depthState, &blue);
 		}
 
 		vec2 rect[] = { MAKERECT(x, y, newX, y + tabHeight, 2) };
-		renderer->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
+		gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
 
-		renderer->drawText(tabs[i]->caption, x + 3, y, tabWidth, tabHeight, defaultFont, linearClamp, blendSrcAlpha, depthState);
+		gfxDevice->drawText(tabs[i]->caption, x + 3, y, tabWidth, tabHeight, defaultFont, linearClamp, blendSrcAlpha, depthState);
 
 		tabs[i]->rightX = x = newX;
 	}
 
 	vec2 line[] = { MAKEQUAD(xPos + 2 * borderWidth, y + tabHeight - 1, xPos + width - 2 * borderWidth, y + tabHeight + 1, 0) };
-	renderer->drawPlain(PRIM_TRIANGLE_STRIP, line, elementsOf(line), BS_NONE, depthState, &black);
+	gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, line, elementsOf(line), BS_NONE, depthState, &black);
 
-	closeButton->draw(renderer, defaultFont, linearClamp, blendSrcAlpha, depthState);
+	closeButton->draw(gfxDevice, defaultFont, linearClamp, blendSrcAlpha, depthState);
 
 	if (currTab < tabs.getCount()){
 		DialogTab *tab = tabs[currTab];
@@ -296,7 +296,7 @@ void Dialog::draw(Renderer *renderer, const FontID defaultFont, const SamplerSta
 		if (tab->widgets.goToLast()){
 			do {
 				Widget *widget = tab->widgets.getCurrent().widget;
-				if (widget->isVisible()) widget->draw(renderer, defaultFont, linearClamp, blendSrcAlpha, depthState);
+				if (widget->isVisible()) widget->draw(gfxDevice, defaultFont, linearClamp, blendSrcAlpha, depthState);
 			} while (tab->widgets.goToPrev());
 		}
 		if (showSelection){
@@ -306,7 +306,7 @@ void Dialog::draw(Renderer *renderer, const FontID defaultFont, const SamplerSta
 				float x = w->getX();
 				float y = w->getY();
 				vec2 rect[] = { MAKERECT(x - 5, y - 5, x + w->getWidth() + 5, y + w->getHeight() + 5, 1) };
-				renderer->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
+				gfxDevice->drawPlain(PRIM_TRIANGLE_STRIP, rect, elementsOf(rect), BS_NONE, depthState, &black);
 			}
 		}
 	}

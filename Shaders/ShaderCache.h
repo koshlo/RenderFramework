@@ -15,10 +15,10 @@ enum RenderPath
 class ShaderCache
 {
 public:
-	ShaderCache(GraphicsDevice& device);
+	ShaderCache(GraphicsDevice* device);
 
 	ShaderID GetGeometryShader(RenderPath renderPath) const;
 private:
-	GraphicsDevice& _device;
+	GraphicsDevice* _device;
 	ShaderID _geometryShaders[RenderPath_Count];
 };

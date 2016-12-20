@@ -13,14 +13,14 @@ namespace
 	};
 }
 
-ShaderCache::ShaderCache(GraphicsDevice& device)
+ShaderCache::ShaderCache(GraphicsDevice* device)
 	: _device(device)
 {
 	static_assert(RenderPath_Count == array_size(GeometryShaders), "Invalid mapping of shaders");
 
 	for (uint i = 0; i < array_size(_geometryShaders); ++i)
 	{
-		_geometryShaders[i] = _device.addShader(GeometryShaders[i]);
+		_geometryShaders[i] = _device->addShader(GeometryShaders[i]);
 	}
 }
 

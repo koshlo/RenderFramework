@@ -10,27 +10,24 @@ class RenderResourceLoader;
 class ShaderData;
 class SceneShaderData;
 class ShaderCache;
+class RenderStateCache;
 class RenderQueue;
 
 class SceneObject
 {
 public:
-	bool Load(const std::string& name, const RenderResourceLoader& resourceLoader, const ShaderCache& shaderCache);
+	bool Load(const std::string& name, const RenderResourceLoader& resourceLoader, const ShaderCache& shaderCache, RenderStateCache& stateCache);
 	
-	void Draw(StateHelper* stateHelper) const;
 	void Draw(StateHelper* stateHelper, ShaderID shader, const ShaderData& shaderData) const;
-	void Draw(RenderQueue& renderQueue);
+	void Draw(RenderQueue& renderQueue, uint32 sortKey);
 	AABB GetBoundingBox() const;
 
-	static void SetViewProjection(const mat4& viewProj);
-	static void SetSunLighting(const vec3& lightDir, const vec3& lightIntensity, const vec3& ambient);
-	static void SetViewport(const vec2& viewport);
-	static bool SetupGeometryShader(const char* shaderName, GraphicsDevice* gfxDevice);
 private:
 	Model _model;
 	Optional<ObjMaterialLib> _materialLib;
 	std::vector<MaterialShaderData*> _batchMaterials;
-	RenderState _renderState;
+	RenderState _opaqueRenderState;
+	ShaderID _geometryShader;
 
 	void PrepareDrawData(GraphicsDevice& gfxDevice);
 };

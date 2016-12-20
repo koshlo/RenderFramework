@@ -6,10 +6,7 @@
 #include "../RenderQueue.h"
 #include "../DrawCall.h"
 
-SceneShaderData SceneObject::_sceneShaderData;
-ShaderID SceneObject::_geometryShader = SHADER_NONE;
-
-bool SceneObject::Load(const std::string& name, const RenderResourceLoader& resourceLoader, const ShaderCache& shaderCache)
+bool SceneObject::Load(const std::string& name, const RenderResourceLoader& resourceLoader, const ShaderCache& shaderCache, RenderStateCache& stateCache)
 {
 	if ( _model.loadObj(name.c_str()) )
 	{
@@ -24,7 +21,17 @@ bool SceneObject::Load(const std::string& name, const RenderResourceLoader& reso
 		_geometryShader = shaderCache.GetGeometryShader(RenderPath_Forward);
 		ASSERT(_geometryShader != SHADER_NONE);
 		PrepareDrawData(resourceLoader.GetGraphicsDevice());
+
+		RenderStateDesc stateDesc;
+		stateDesc.shader = _geometryShader;
+		stateDesc.depthWrite = true;
+		stateDesc.depthTest = true;
+		stateDesc.depthOp = GEQUAL;
+		stateDesc.cullState = CULL_BACK;
+
+		_opaqueRenderState = stateCache.GetRenderState(stateDesc);
 	}
+	return _materialLib.isValid();
 }
 
 void SceneObject::PrepareDrawData(GraphicsDevice& gfxDevice)
@@ -38,18 +45,6 @@ void SceneObject::PrepareDrawData(GraphicsDevice& gfxDevice)
 	_model.makeDrawable(&gfxDevice, true, _geometryShader);
 }
 
-void SceneObject::Draw(StateHelper* stateHelper) const
-{
-	GraphicsDevice* gfxDevice = stateHelper->GetDevice();
-	gfxDevice->setShader(_geometryShader);
-	_sceneShaderData.Apply(stateHelper);
-	for (uint i = 0; i < _model.getBatchCount(); ++i)
-	{
-		_batchMaterials[i]->Apply(stateHelper);
-		_model.drawBatch(gfxDevice, i);
-	}
-}
-
 void SceneObject::Draw(StateHelper* stateHelper, ShaderID shader, const ShaderData& shaderData) const
 {
 	stateHelper->GetDevice()->setShader(shader);
@@ -60,9 +55,16 @@ void SceneObject::Draw(StateHelper* stateHelper, ShaderID shader, const ShaderDa
 	}
 }
 
-void SceneObject::Draw(RenderQueue& renderQueue)
+void SceneObject::Draw(RenderQueue& renderQueue, uint32 sortKey)
 {
-	renderQueue.AddRenderCommand<BatchDrawCall>()
+	for (uint32 i = 0; i < _model.getBatchCount(); ++i)
+	{
+		BatchDrawCall& drawCall = renderQueue.AddRenderCommand<BatchDrawCall>(sortKey + i, &_opaqueRenderState);
+		drawCall.batchNumber = i;
+		drawCall.geometry = &_model;
+		drawCall.shaderData = _batchMaterials[i];
+		drawCall.shaderDataCount = 1;
+	}
 }
 
 AABB SceneObject::GetBoundingBox() const
@@ -71,28 +73,4 @@ AABB SceneObject::GetBoundingBox() const
 	float aabbCoordsMax[3];
 	_model.getBoundingBox(_model.findStream(TYPE_VERTEX), aabbCoordsMin, aabbCoordsMax);
 	return AABB(aabbCoordsMin, aabbCoordsMax);
-}
-
-void SceneObject::SetViewProjection(const mat4& viewProj)
-{
-	_sceneShaderData.SetViewProjection(viewProj);
-	_sceneShaderData.SetInvViewProjection(!viewProj);
-}
-
-void SceneObject::SetSunLighting(const vec3& lightDir, const vec3& lightIntensity, const vec3& ambient)
-{
-	_sceneShaderData.SetSunDirection(lightDir);
-	_sceneShaderData.SetSunIntensity(lightIntensity);
-	_sceneShaderData.SetAmbient(ambient);
-}
-
-void SceneObject::SetViewport(const vec2& viewport)
-{
-	_sceneShaderData.SetViewport(viewport);
-}
-
-bool SceneObject::SetupGeometryShader(const char* shaderName, GraphicsDevice* gfxDevice)
-{
-	_geometryShader = gfxDevice->addShader(shaderName);
-	return _geometryShader != SHADER_NONE;
 }

@@ -20,7 +20,6 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "BaseApp.h"
-#include "StateHelper.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -110,11 +109,15 @@ void BaseApp::loadConfig(){
 bool BaseApp::postInitAPI()
 {
 	stateHelper = new StateHelper(gfxDevice);
+	renderStateCache = new RenderStateCache(gfxDevice);
+	shaderCache = new ShaderCache(gfxDevice);
 	return true;
 }
 
 void BaseApp::beforeExitAPI()
 {
+	delete shaderCache;
+	delete renderStateCache;
 	delete stateHelper;
 }
 

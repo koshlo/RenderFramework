@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RenderDefs.h"
+#include "Platform.h"
 #include <unordered_map>
 
 class GraphicsDevice;
@@ -16,18 +17,20 @@ struct RenderState
 struct RenderStateDesc
 {
 	ShaderID shader;
-	bool depthTest : 4;
-	bool depthWrite : 4;
-	int16 depthOp;
-	int16 cullState;
+	int32 depthTest : 8;
+	int32 depthWrite : 8;
+	int32 depthOp : 8;
+	int32 cullState : 8;
 };
 
 class RenderStateCache
 {
 public:
-	const RenderState& GetRenderState(GraphicsDevice& gfxDevice, const RenderStateDesc& stateDesc);
+	RenderStateCache(GraphicsDevice* gfxDevice) : _device(gfxDevice) {}
+	const RenderState& GetRenderState(const RenderStateDesc& stateDesc);
 private:
 	typedef std::unordered_map<uint64, RenderState> RenderStateMap;
 
 	RenderStateMap _renderStates;
+	GraphicsDevice* _device;
 };

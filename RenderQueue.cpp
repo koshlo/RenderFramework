@@ -110,6 +110,10 @@ void RenderQueue::SubmitAll(GraphicsDevice* gfxDevice, StateHelper* stateHelper)
 		RenderFunc func = *GetRenderFunc(command);
 		RenderStatePtr renderState = *GetRenderStatePtr(command);
 		stateHelper->Apply(renderState);
+		for (uint iShaderData = 0; iShaderData < _numShaderData; ++iShaderData)
+		{
+			_shaderData[iShaderData]->Apply(stateHelper);
+		}
 		func(gfxDevice, stateHelper, GetData(command));
 	}
 	_currentCommand = 0;

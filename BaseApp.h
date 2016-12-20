@@ -26,6 +26,10 @@
 #include "GUI/Label.h"
 #include "GUI/DropDownList.h"
 
+#include "StateHelper.h"
+#include "RenderState.h"
+#include "Shaders/ShaderCache.h"
+
 #ifdef _WIN32
 #include <shlobj.h>
 #else
@@ -36,6 +40,7 @@
 #endif
 
 class StateHelper;
+class RenderStateCache;
 
 class BaseApp : public SliderListener, public CheckBoxListener, public DropDownListener, public PushButtonListener {
 public:
@@ -116,6 +121,8 @@ protected:
 
 	GraphicsDevice* gfxDevice;
 	StateHelper* stateHelper;
+	RenderStateCache* renderStateCache;
+	ShaderCache* shaderCache;
 
 	vec3 camPos;
 	float wx, wy;

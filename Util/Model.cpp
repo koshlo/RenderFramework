@@ -1508,7 +1508,7 @@ uint Model::assemble(const StreamID *aStreams, const uint nStreams, float **dest
 		optimizeStream(aStreams[i]);
 	}
 
-	float* destEnd;
+	float* destEnd = nullptr;
 
 	if (separateArrays){
 		for (i = 0; i < nStreams; i++){

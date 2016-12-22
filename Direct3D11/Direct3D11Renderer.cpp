@@ -64,6 +64,13 @@ struct Constant
     int csBuffer;
 };
 
+struct RWBuffer
+{
+	int vsBuffer;
+	int psBuffer;
+	int csBuffer;
+};
+
 int constantComp(const void *s0, const void *s1)
 {
 	return strcmp(((Constant *) s0)->name, ((Constant *) s1)->name);
@@ -107,6 +114,9 @@ struct Shader
     Sampler *rwTextures;
 	Sampler *samplers;
 
+	RWBuffer *rwBuffers;
+	uint nCSRWBuffers;
+
 	uint nConstants;
 	uint nTextures;
     uint nRwTextures;
@@ -140,6 +150,13 @@ struct IndexBuffer
 	ID3D11Buffer *indexBuffer;
 	uint nIndices;
 	uint indexSize;
+};
+
+struct StructuredBuffer
+{
+	ID3D11Buffer *structuredBuffer;
+	uint stride;
+	uint size;
 };
 
 struct SamplerState
@@ -1833,6 +1850,17 @@ IndexBufferID Direct3D11Renderer::addIndexBuffer(const uint nIndices, const uint
 	}
 
 	return indexBuffers.add(ib);
+}
+
+StructuredBufferID Direct3D11Renderer::addStructuredBuffer(const uint stride, const uint size)
+{
+	StructuredBuffer sb;
+	sb.size = size;
+	sb.stride = stride;
+
+	//TODO
+
+	return structuredBuffers.add(sb);
 }
 
 static const D3D11_FILTER filters[] =

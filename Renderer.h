@@ -348,6 +348,7 @@ protected:
 	Array <Shader> shaders;
 	Array <VertexBuffer> vertexBuffers;
 	Array <IndexBuffer> indexBuffers;
+	Array <StructuredBuffer> structuredBuffers;
 	Array <TexFont> fonts;
 	Array <VertexFormat> vertexFormats;
 	Array <SamplerState> samplerStates;

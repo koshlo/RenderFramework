@@ -149,6 +149,7 @@ protected:
 	SamplerStateID currentSamplerStatesPS[MAX_SAMPLERSTATE], selectedSamplerStatesPS[MAX_SAMPLERSTATE];
     SamplerStateID currentSamplerStatesCS[MAX_SAMPLERSTATE], selectedSamplerStatesCS[MAX_SAMPLERSTATE];
 
+	StructuredBufferID currentStructBuffers[MAX_STRUCT_BUFFER], selectedStructBuffers[MAX_STRUCT_BUFFER];
 
 private:
 	ubyte *mapRollingVB(const uint size);

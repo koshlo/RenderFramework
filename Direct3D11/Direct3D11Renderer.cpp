@@ -64,21 +64,14 @@ struct Constant
     int csBuffer;
 };
 
-struct RWBuffer
-{
-	int vsBuffer;
-	int psBuffer;
-	int csBuffer;
-};
-
 int constantComp(const void *s0, const void *s1)
 {
 	return strcmp(((Constant *) s0)->name, ((Constant *) s1)->name);
 }
 
-struct Sampler
+struct ShaderResource
 {
-	Sampler() : name(nullptr), vsIndex(-1), gsIndex(-1), psIndex(-1), csIndex(-1) {}
+	ShaderResource() : name(nullptr), vsIndex(-1), gsIndex(-1), psIndex(-1), csIndex(-1) {}
 
 	char *name;
 	int vsIndex;
@@ -87,9 +80,9 @@ struct Sampler
     int csIndex;
 };
 
-int samplerComp(const void *s0, const void *s1)
+int resourceComp(const void *s0, const void *s1)
 {
-	return strcmp(((Sampler *) s0)->name, ((Sampler *) s1)->name);
+	return strcmp(((ShaderResource *) s0)->name, ((ShaderResource *) s1)->name);
 }
 
 struct Shader
@@ -110,17 +103,16 @@ struct Shader
     uint nCSCBuffers;
 
 	Constant *constants;
-	Sampler *textures;
-    Sampler *rwTextures;
-	Sampler *samplers;
-
-	RWBuffer *rwBuffers;
-	uint nCSRWBuffers;
+	ShaderResource *textures;
+    ShaderResource *rwTextures;
+	ShaderResource *samplers;
+	ShaderResource *rwBuffers;
 
 	uint nConstants;
 	uint nTextures;
     uint nRwTextures;
 	uint nSamplers;
+	uint nRwBuffers;
 
 	ubyte **vsConstMem;
 	ubyte **gsConstMem;
@@ -155,6 +147,9 @@ struct IndexBuffer
 struct StructuredBuffer
 {
 	ID3D11Buffer *structuredBuffer;
+	ID3D11ShaderResourceView *srv;
+	ID3D11UnorderedAccessView *uav;
+
 	uint stride;
 	uint size;
 };
@@ -1420,8 +1415,8 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 	int maxResources = nMaxVSRes + nMaxGSRes + nMaxPSRes;
 	if (maxResources)
 	{
-		shader.textures = (Sampler *) malloc(maxResources * sizeof(Sampler));
-		shader.samplers = (Sampler *) malloc(maxResources * sizeof(Sampler));
+		shader.textures = (ShaderResource *) malloc(maxResources * sizeof(ShaderResource));
+		shader.samplers = (ShaderResource *) malloc(maxResources * sizeof(ShaderResource));
 		shader.nTextures = 0;
 		shader.nSamplers = 0;
 
@@ -1575,10 +1570,10 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 				}
 			}
 		}
-		shader.textures = (Sampler *) realloc(shader.textures, shader.nTextures * sizeof(Sampler));
-		shader.samplers = (Sampler *) realloc(shader.samplers, shader.nSamplers * sizeof(Sampler));
-		qsort(shader.textures, shader.nTextures, sizeof(Sampler), samplerComp);
-		qsort(shader.samplers, shader.nSamplers, sizeof(Sampler), samplerComp);
+		shader.textures = (ShaderResource *) realloc(shader.textures, shader.nTextures * sizeof(ShaderResource));
+		shader.samplers = (ShaderResource *) realloc(shader.samplers, shader.nSamplers * sizeof(ShaderResource));
+		qsort(shader.textures, shader.nTextures, sizeof(ShaderResource), resourceComp);
+		qsort(shader.samplers, shader.nSamplers, sizeof(ShaderResource), resourceComp);
 	}
 
 	if (vsRefl) vsRefl->Release();
@@ -1684,9 +1679,9 @@ ShaderID Direct3D11Renderer::addComputeShader( const char* src, const char** dif
 
     if (nMaxCSRes)
     {
-        shader.textures = (Sampler *) malloc(nMaxCSRes * sizeof(Sampler));
-        shader.samplers = (Sampler *) malloc(nMaxCSRes * sizeof(Sampler));
-        shader.rwTextures = (Sampler *) malloc(nMaxCSRes * sizeof(Sampler));
+        shader.textures = (ShaderResource *) malloc(nMaxCSRes * sizeof(ShaderResource));
+        shader.samplers = (ShaderResource *) malloc(nMaxCSRes * sizeof(ShaderResource));
+        shader.rwTextures = (ShaderResource *) malloc(nMaxCSRes * sizeof(ShaderResource));
         shader.nTextures = 0;
         shader.nSamplers = 0;
         shader.nRwTextures = 0;
@@ -1695,7 +1690,7 @@ ShaderID Direct3D11Renderer::addComputeShader( const char* src, const char** dif
         for (uint i = 0; i < nMaxCSRes; i++)
         {
             csRefl->GetResourceBindingDesc(i, &siDesc);
-			Sampler* currentSampler = nullptr;
+			ShaderResource* currentSampler = nullptr;
             if (siDesc.Type == D3D10_SIT_TEXTURE)
             {
 				currentSampler = &shader.textures[shader.nTextures];
@@ -1723,13 +1718,13 @@ ShaderID Direct3D11Renderer::addComputeShader( const char* src, const char** dif
 			}
 		}
         
-        shader.textures = (Sampler *) realloc(shader.textures, shader.nTextures * sizeof(Sampler));
-        shader.samplers = (Sampler *) realloc(shader.samplers, shader.nSamplers * sizeof(Sampler));
-        shader.rwTextures = (Sampler *) realloc(shader.rwTextures, shader.nRwTextures * sizeof(Sampler));
+        shader.textures = (ShaderResource *) realloc(shader.textures, shader.nTextures * sizeof(ShaderResource));
+        shader.samplers = (ShaderResource *) realloc(shader.samplers, shader.nSamplers * sizeof(ShaderResource));
+        shader.rwTextures = (ShaderResource *) realloc(shader.rwTextures, shader.nRwTextures * sizeof(ShaderResource));
 
-        qsort(shader.textures, shader.nTextures, sizeof(Sampler), samplerComp);
-        qsort(shader.samplers, shader.nSamplers, sizeof(Sampler), samplerComp);
-        qsort(shader.rwTextures, shader.nRwTextures, sizeof(Sampler), samplerComp);
+        qsort(shader.textures, shader.nTextures, sizeof(ShaderResource), resourceComp);
+        qsort(shader.samplers, shader.nSamplers, sizeof(ShaderResource), resourceComp);
+        qsort(shader.rwTextures, shader.nRwTextures, sizeof(ShaderResource), resourceComp);
     }
     if (csRefl) csRefl->Release();
 
@@ -2010,7 +2005,7 @@ RasterizerStateID Direct3D11Renderer::addRasterizerState(const int cullMode, con
 	return rasterizerStates.add(rasterizerState);
 }
 
-const Sampler *getSampler(const Sampler *samplers, const int count, const char *name)
+const ShaderResource *getShaderResource(const ShaderResource *samplers, const int count, const char *name)
 {
 	int minSampler = 0;
 	int maxSampler = count - 1;
@@ -2035,7 +2030,7 @@ void Direct3D11Renderer::setTexture(const char *textureName, const TextureID tex
 {
 	ASSERT(selectedShader != SHADER_NONE);
 
-	const Sampler *s = getSampler(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
+	const ShaderResource *s = getShaderResource(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
 	if (s)
 	{
 		if (s->vsIndex >= 0)
@@ -2073,7 +2068,7 @@ void Direct3D11Renderer::setTexture(const char *textureName, const TextureID tex
 {
 	ASSERT(selectedShader != SHADER_NONE);
 
-	const Sampler *s = getSampler(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
+	const ShaderResource *s = getShaderResource(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
 	if (s)
 	{
 		if (s->vsIndex >= 0)
@@ -2115,7 +2110,7 @@ void Direct3D11Renderer::setTextureSlice(const char *textureName, const TextureI
 {
 	ASSERT(selectedShader != SHADER_NONE);
 
-	const Sampler *s = getSampler(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
+	const ShaderResource *s = getShaderResource(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
 	if (s)
 	{
 		if (s->vsIndex >= 0)
@@ -2152,7 +2147,7 @@ void Direct3D11Renderer::setTextureSlice(const char *textureName, const TextureI
 void Direct3D11Renderer::setUnorderedAccessTexture( const char *textureName, const TextureID texture )
 {
     ASSERT(selectedShader != SHADER_NONE);
-    const Sampler *s = getSampler(shaders[selectedShader].rwTextures, shaders[selectedShader].nRwTextures, textureName);
+    const ShaderResource *s = getShaderResource(shaders[selectedShader].rwTextures, shaders[selectedShader].nRwTextures, textureName);
     if (s)
     {
         if (s->csIndex >= 0)
@@ -2270,7 +2265,7 @@ void Direct3D11Renderer::setSamplerState(const char *samplerName, const SamplerS
 {
 	ASSERT(selectedShader != SHADER_NONE);
 
-	const Sampler *s = getSampler(shaders[selectedShader].samplers, shaders[selectedShader].nSamplers, samplerName);
+	const ShaderResource *s = getShaderResource(shaders[selectedShader].samplers, shaders[selectedShader].nSamplers, samplerName);
 	if (s)
 	{
 		if (s->vsIndex >= 0) selectedSamplerStatesVS[s->vsIndex] = samplerState;

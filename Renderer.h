@@ -65,6 +65,7 @@ struct FormatDesc {
 #define MAX_UAV	8
 #define MAX_TEXTUREUNIT  16
 #define MAX_SAMPLERSTATE 16
+#define MAX_STRUCT_BUFFER 16
 
 // Blending constants
 extern const int ZERO;

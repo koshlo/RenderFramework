@@ -71,14 +71,25 @@ int constantComp(const void *s0, const void *s1)
 
 struct ShaderResource
 {
-	ShaderResource() : name(nullptr), vsIndex(-1), gsIndex(-1), psIndex(-1), csIndex(-1) {}
+	ShaderResource() : name(nullptr)
+	{
+		for (uint i = 0; i < Shader_Count; ++i)
+		{
+			varIndex[i] = -1;
+		}
+	}
 
 	char *name;
-	int vsIndex;
-	int gsIndex;
-	int psIndex;
-    int csIndex;
+	int varIndex[Shader_Count];
 };
+
+void initResourceVars(ShaderResource& resource)
+{
+	for (uint i = 0; i < Shader_Count; ++i)
+	{
+		resource.varIndex[i] = -1;
+	}
+}
 
 int resourceComp(const void *s0, const void *s1)
 {
@@ -106,12 +117,14 @@ struct Shader
 	ShaderResource *textures;
     ShaderResource *rwTextures;
 	ShaderResource *samplers;
+	ShaderResource *structBuffers;
 	ShaderResource *rwBuffers;
 
 	uint nConstants;
 	uint nTextures;
     uint nRwTextures;
 	uint nSamplers;
+	uint nStructBuffers;
 	uint nRwBuffers;
 
 	ubyte **vsConstMem;
@@ -345,7 +358,7 @@ Direct3D11Renderer::~Direct3D11Renderer()
 		if (shaders[i].vertexShader  ) shaders[i].vertexShader->Release();
 		if (shaders[i].geometryShader) shaders[i].geometryShader->Release();
 		if (shaders[i].pixelShader   ) shaders[i].pixelShader->Release();
-        if (shaders[i].computeShader   ) shaders[i].computeShader->Release();
+        if (shaders[i].computeShader ) shaders[i].computeShader->Release();
 		if (shaders[i].inputSignature) shaders[i].inputSignature->Release();
 
 		for (uint k = 0; k < shaders[i].nVSCBuffers; k++)
@@ -399,6 +412,18 @@ Direct3D11Renderer::~Direct3D11Renderer()
 			delete [] shaders[i].samplers[k].name;
 		}
 		free(shaders[i].samplers);
+
+		for (uint k = 0; k < shaders[i].nStructBuffers; k++)
+		{
+			delete[] shaders[i].structBuffers[k].name;
+		}
+		free(shaders[i].structBuffers);
+
+		for (uint k = 0; k < shaders[i].nRwBuffers; k++)
+		{
+			delete[] shaders[i].rwBuffers[k].name;
+		}
+		free(shaders[i].rwBuffers);
 
 		delete [] shaders[i].vsDirty;
 		delete [] shaders[i].gsDirty;
@@ -470,16 +495,13 @@ void Direct3D11Renderer::reset(const uint flags)
 
 	if (flags & RESET_TEX)
 	{
-		for (uint i = 0; i < MAX_TEXTUREUNIT; i++)
+		for (uint i = 0; i < Shader_Count; ++i)
 		{
-			selectedTexturesVS[i] = TEXTURE_NONE;
-			selectedTexturesGS[i] = TEXTURE_NONE;
-			selectedTexturesPS[i] = TEXTURE_NONE;
-            selectedTexturesCS[i] = TEXTURE_NONE;
-			selectedTextureSlicesVS[i] = NO_SLICE;
-			selectedTextureSlicesGS[i] = NO_SLICE;
-			selectedTextureSlicesPS[i] = NO_SLICE;
-            selectedTextureSlicesCS[i] = NO_SLICE;
+			for (uint j = 0; j < MAX_TEXTUREUNIT; ++j)
+			{
+				selectedTextures[i][j] = TEXTURE_NONE;
+				selectedTextureSlices[i][j] = NO_SLICE;
+			}
 		}
 	}
 
@@ -493,12 +515,12 @@ void Direct3D11Renderer::reset(const uint flags)
 
 	if (flags & RESET_SS)
 	{
-		for (uint i = 0; i < MAX_SAMPLERSTATE; i++)
+		for (uint i = 0; i < Shader_Count; ++i)
 		{
-			selectedSamplerStatesVS[i] = SS_NONE;
-			selectedSamplerStatesGS[i] = SS_NONE;
-			selectedSamplerStatesPS[i] = SS_NONE;
-            selectedSamplerStatesCS[i] = SS_NONE;
+			for (uint j = 0; j < MAX_SAMPLERSTATE; ++j)
+			{
+				selectedSamplerStates[i][j] = SS_NONE;
+			}
 		}
 	}
 }
@@ -507,24 +529,21 @@ void Direct3D11Renderer::resetToDefaults()
 {
 	GraphicsDevice::resetToDefaults();
 
-	for (uint i = 0; i < MAX_TEXTUREUNIT; i++)
+	for (uint i = 0; i < Shader_Count; ++i)
 	{
-		currentTexturesVS[i] = TEXTURE_NONE;
-		currentTexturesGS[i] = TEXTURE_NONE;
-		currentTexturesPS[i] = TEXTURE_NONE;
-        currentTexturesCS[i] = TEXTURE_NONE;
-		currentTextureSlicesVS[i] = NO_SLICE;
-		currentTextureSlicesGS[i] = NO_SLICE;
-		currentTextureSlicesPS[i] = NO_SLICE;
-        currentTextureSlicesCS[i] = NO_SLICE;
+		for (uint j = 0; j < MAX_TEXTUREUNIT; ++j)
+		{
+			selectedTextures[i][j] = TEXTURE_NONE;
+			selectedTextureSlices[i][j] = NO_SLICE;
+		}
 	}
 
-	for (uint i = 0; i < MAX_SAMPLERSTATE; i++)
+	for (uint i = 0; i < Shader_Count; ++i)
 	{
-		currentSamplerStatesVS[i] = SS_NONE;
-		currentSamplerStatesGS[i] = SS_NONE;
-		currentSamplerStatesPS[i] = SS_NONE;
-        currentSamplerStatesCS[i] = SS_NONE;
+		for (uint j = 0; j < MAX_SAMPLERSTATE; ++j)
+		{
+			currentSamplerStates[i][j] = SS_NONE;
+		}
 	}
 
 	// TODO: Fix ...
@@ -1417,39 +1436,46 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 	{
 		shader.textures = (ShaderResource *) malloc(maxResources * sizeof(ShaderResource));
 		shader.samplers = (ShaderResource *) malloc(maxResources * sizeof(ShaderResource));
+		shader.structBuffers = (ShaderResource *)malloc(maxResources * sizeof(ShaderResource));
+
 		shader.nTextures = 0;
 		shader.nSamplers = 0;
+		shader.nStructBuffers = 0;
 
 		D3D11_SHADER_INPUT_BIND_DESC siDesc;
 		for (uint i = 0; i < nMaxVSRes; i++)
 		{
 			vsRefl->GetResourceBindingDesc(i, &siDesc);
+			size_t length = strlen(siDesc.Name);
 
 			if (siDesc.Type == D3D10_SIT_TEXTURE)
 			{
-				size_t length = strlen(siDesc.Name);
 				shader.textures[shader.nTextures].name = new char[length + 1];
 				strcpy(shader.textures[shader.nTextures].name, siDesc.Name);
-				shader.textures[shader.nTextures].vsIndex = siDesc.BindPoint;
-				shader.textures[shader.nTextures].gsIndex = -1;
-				shader.textures[shader.nTextures].psIndex = -1;
-                shader.textures[shader.nTextures].csIndex = -1;
+				initResourceVars(shader.textures[shader.nTextures]);
+				shader.textures[shader.nTextures].varIndex[Shader_VS] = siDesc.BindPoint;
 				shader.nTextures++;
 			}
 			else if (siDesc.Type == D3D10_SIT_SAMPLER)
 			{
-				size_t length = strlen(siDesc.Name);
 				shader.samplers[shader.nSamplers].name = new char[length + 1];
 				strcpy(shader.samplers[shader.nSamplers].name, siDesc.Name);
-				shader.samplers[shader.nSamplers].vsIndex = siDesc.BindPoint;
-				shader.samplers[shader.nSamplers].gsIndex = -1;
-				shader.samplers[shader.nSamplers].psIndex = -1;
-                shader.samplers[shader.nSamplers].csIndex = -1;
+				initResourceVars(shader.textures[shader.nTextures]);
+				shader.samplers[shader.nSamplers].varIndex[Shader_VS] = siDesc.BindPoint;
 				shader.nSamplers++;
+			}
+			else if (siDesc.Type == D3D10_SIT_TBUFFER)
+			{
+				shader.structBuffers[shader.nStructBuffers].name = new char[length + 1];
+				strcpy(shader.structBuffers[shader.nStructBuffers].name, siDesc.Name);
+				initResourceVars(shader.structBuffers[shader.nStructBuffers]);
+				shader.structBuffers[shader.nStructBuffers].varIndex[Shader_VS] = siDesc.BindPoint;
+				shader.nStructBuffers++;
 			}
 		}
 		uint maxTexture = shader.nTextures;
 		uint maxSampler = shader.nSamplers;
+		uint maxStructures = shader.nStructBuffers;
 		for (uint i = 0; i < nMaxGSRes; i++)
 		{
 			gsRefl->GetResourceBindingDesc(i, &siDesc);
@@ -1470,15 +1496,13 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 					size_t length = strlen(siDesc.Name);
 					shader.textures[shader.nTextures].name = new char[length + 1];
 					strcpy(shader.textures[shader.nTextures].name, siDesc.Name);
-					shader.textures[shader.nTextures].vsIndex = -1;
-					shader.textures[shader.nTextures].gsIndex = siDesc.BindPoint;
-					shader.textures[shader.nTextures].psIndex = -1;
-                    shader.textures[shader.nTextures].csIndex = -1;
+					initResourceVars(shader.textures[shader.nTextures]);
+					shader.textures[shader.nTextures].varIndex[Shader_GS] = siDesc.BindPoint;
 					shader.nTextures++;
 				}
 				else
 				{
-					shader.textures[merge].gsIndex = siDesc.BindPoint;
+					shader.textures[merge].varIndex[Shader_GS] = siDesc.BindPoint;
 				}
 			}
 			else if (siDesc.Type == D3D10_SIT_SAMPLER)
@@ -1497,20 +1521,44 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 					size_t length = strlen(siDesc.Name);
 					shader.samplers[shader.nSamplers].name = new char[length + 1];
 					strcpy(shader.samplers[shader.nSamplers].name, siDesc.Name);
-					shader.samplers[shader.nSamplers].vsIndex = -1;
-					shader.samplers[shader.nSamplers].gsIndex = siDesc.BindPoint;
-					shader.samplers[shader.nSamplers].psIndex = -1;
-                    shader.samplers[shader.nSamplers].csIndex = -1;
+					initResourceVars(shader.textures[shader.nTextures]);
+					shader.textures[shader.nTextures].varIndex[Shader_GS] = siDesc.BindPoint;
 					shader.nSamplers++;
 				}
 				else
 				{
-					shader.samplers[merge].gsIndex = siDesc.BindPoint;
+					shader.textures[merge].varIndex[Shader_GS] = siDesc.BindPoint;
+				}
+			}
+			else if (siDesc.Type == D3D10_SIT_TBUFFER)
+			{
+				int merge = -1;
+				for (uint i = 0; i < maxStructures; i++)
+				{
+					if (strcmp(shader.structBuffers[i].name, siDesc.Name) == 0)
+					{
+						merge = i;
+						break;
+					}
+				}
+				if (merge < 0)
+				{
+					size_t length = strlen(siDesc.Name);
+					shader.structBuffers[shader.nStructBuffers].name = new char[length + 1];
+					strcpy(shader.structBuffers[shader.nStructBuffers].name, siDesc.Name);
+					initResourceVars(shader.structBuffers[shader.nStructBuffers]);
+					shader.structBuffers[shader.nStructBuffers].varIndex[Shader_VS] = siDesc.BindPoint;
+					shader.nStructBuffers++;
+				}
+				else
+				{
+					shader.structBuffers[merge].varIndex[Shader_GS] = siDesc.BindPoint;
 				}
 			}
 		}
 		maxTexture = shader.nTextures;
 		maxSampler = shader.nSamplers;
+		maxStructures = shader.nStructBuffers;
 		for (uint i = 0; i < nMaxPSRes; i++)
 		{
 			psRefl->GetResourceBindingDesc(i, &siDesc);
@@ -1531,15 +1579,13 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 					size_t length = strlen(siDesc.Name);
 					shader.textures[shader.nTextures].name = new char[length + 1];
 					strcpy(shader.textures[shader.nTextures].name, siDesc.Name);
-					shader.textures[shader.nTextures].vsIndex = -1;
-					shader.textures[shader.nTextures].gsIndex = -1;
-					shader.textures[shader.nTextures].psIndex = siDesc.BindPoint;
-                    shader.textures[shader.nTextures].csIndex = -1;
+					initResourceVars(shader.textures[shader.nTextures]);
+					shader.textures[shader.nTextures].varIndex[Shader_PS] = siDesc.BindPoint;
 					shader.nTextures++;
 				}
 				else
 				{
-					shader.textures[merge].psIndex = siDesc.BindPoint;
+					shader.textures[merge].varIndex[Shader_PS] = siDesc.BindPoint;
 				}
 			}
 			else if (siDesc.Type == D3D10_SIT_SAMPLER)
@@ -1558,22 +1604,47 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 					size_t length = strlen(siDesc.Name);
 					shader.samplers[shader.nSamplers].name = new char[length + 1];
 					strcpy(shader.samplers[shader.nSamplers].name, siDesc.Name);
-					shader.samplers[shader.nSamplers].vsIndex = -1;
-					shader.samplers[shader.nSamplers].gsIndex = -1;
-					shader.samplers[shader.nSamplers].psIndex = siDesc.BindPoint;
-                    shader.samplers[shader.nSamplers].csIndex = -1;
+					initResourceVars(shader.textures[shader.nTextures]);
+					shader.textures[shader.nTextures].varIndex[Shader_PS] = siDesc.BindPoint;
 					shader.nSamplers++;
 				}
 				else
 				{
-					shader.samplers[merge].psIndex = siDesc.BindPoint;
+					shader.samplers[merge].varIndex[Shader_PS] = siDesc.BindPoint;
+				}
+			}
+			else if (siDesc.Type == D3D10_SIT_TBUFFER)
+			{
+				int merge = -1;
+				for (uint i = 0; i < maxStructures; i++)
+				{
+					if (strcmp(shader.structBuffers[i].name, siDesc.Name) == 0)
+					{
+						merge = i;
+						break;
+					}
+				}
+				if (merge < 0)
+				{
+					size_t length = strlen(siDesc.Name);
+					shader.structBuffers[shader.nStructBuffers].name = new char[length + 1];
+					strcpy(shader.structBuffers[shader.nStructBuffers].name, siDesc.Name);
+					initResourceVars(shader.structBuffers[shader.nStructBuffers]);
+					shader.structBuffers[shader.nStructBuffers].varIndex[Shader_PS] = siDesc.BindPoint;
+					shader.nStructBuffers++;
+				}
+				else
+				{
+					shader.structBuffers[merge].varIndex[Shader_PS] = siDesc.BindPoint;
 				}
 			}
 		}
 		shader.textures = (ShaderResource *) realloc(shader.textures, shader.nTextures * sizeof(ShaderResource));
 		shader.samplers = (ShaderResource *) realloc(shader.samplers, shader.nSamplers * sizeof(ShaderResource));
+		shader.structBuffers = (ShaderResource *)realloc(shader.structBuffers, shader.nStructBuffers* sizeof(ShaderResource));
 		qsort(shader.textures, shader.nTextures, sizeof(ShaderResource), resourceComp);
 		qsort(shader.samplers, shader.nSamplers, sizeof(ShaderResource), resourceComp);
+		qsort(shader.structBuffers, shader.nStructBuffers, sizeof(ShaderResource), resourceComp);
 	}
 
 	if (vsRefl) vsRefl->Release();
@@ -1682,49 +1753,67 @@ ShaderID Direct3D11Renderer::addComputeShader( const char* src, const char** dif
         shader.textures = (ShaderResource *) malloc(nMaxCSRes * sizeof(ShaderResource));
         shader.samplers = (ShaderResource *) malloc(nMaxCSRes * sizeof(ShaderResource));
         shader.rwTextures = (ShaderResource *) malloc(nMaxCSRes * sizeof(ShaderResource));
+		shader.rwBuffers = (ShaderResource *) malloc(nMaxCSRes * sizeof(ShaderResource));
+		shader.structBuffers = (ShaderResource *) malloc(nMaxCSRes * sizeof(ShaderResource));
+
         shader.nTextures = 0;
         shader.nSamplers = 0;
         shader.nRwTextures = 0;
+		shader.nRwBuffers = 0;
+		shader.nStructBuffers = 0;
 
         D3D11_SHADER_INPUT_BIND_DESC siDesc;
         for (uint i = 0; i < nMaxCSRes; i++)
         {
             csRefl->GetResourceBindingDesc(i, &siDesc);
-			ShaderResource* currentSampler = nullptr;
+			ShaderResource* currentRes = nullptr;
             if (siDesc.Type == D3D10_SIT_TEXTURE)
             {
-				currentSampler = &shader.textures[shader.nTextures];
+				currentRes = &shader.textures[shader.nTextures];
                 shader.nTextures++;
             }
             else if (siDesc.Type == D3D10_SIT_SAMPLER)
             {
-				currentSampler = &shader.samplers[shader.nSamplers];
+				currentRes = &shader.samplers[shader.nSamplers];
                 shader.nSamplers++;
             }
+			else if (siDesc.Type == D3D10_SIT_TBUFFER)
+			{
+				currentRes = &shader.structBuffers[shader.nStructBuffers];
+				shader.nStructBuffers++;
+			}
             else if (siDesc.Type == D3D_SIT_UAV_RWTYPED)
             {
-				currentSampler = &shader.rwTextures[shader.nRwTextures];
+				currentRes = &shader.rwTextures[shader.nRwTextures];
                 shader.nRwTextures++;
             }
-			if (currentSampler != nullptr)
+			else if (siDesc.Type == D3D_SIT_UAV_RWSTRUCTURED)
+			{
+				currentRes = &shader.rwBuffers[shader.nRwBuffers];
+				shader.nRwBuffers++;
+			}
+			if (currentRes != nullptr)
 			{
 				size_t length = strlen(siDesc.Name);
-				currentSampler->name = new char[length + 1];
-				strcpy(currentSampler->name, siDesc.Name);
-				currentSampler->csIndex = siDesc.BindPoint;
-				currentSampler->psIndex = -1;
-				currentSampler->gsIndex = -1;
-				currentSampler->vsIndex = -1;
+				currentRes->name = new char[length + 1];
+				strcpy(currentRes->name, siDesc.Name);
+				initResourceVars(*currentRes);
+				currentRes->varIndex[Shader_CS] = siDesc.BindPoint;
 			}
 		}
         
         shader.textures = (ShaderResource *) realloc(shader.textures, shader.nTextures * sizeof(ShaderResource));
         shader.samplers = (ShaderResource *) realloc(shader.samplers, shader.nSamplers * sizeof(ShaderResource));
         shader.rwTextures = (ShaderResource *) realloc(shader.rwTextures, shader.nRwTextures * sizeof(ShaderResource));
+		shader.structBuffers = (ShaderResource *) realloc(shader.structBuffers, shader.nStructBuffers * sizeof(ShaderResource));
+		shader.rwBuffers = (ShaderResource *) realloc(shader.rwBuffers, shader.nRwBuffers * sizeof(ShaderResource));
 
         qsort(shader.textures, shader.nTextures, sizeof(ShaderResource), resourceComp);
         qsort(shader.samplers, shader.nSamplers, sizeof(ShaderResource), resourceComp);
         qsort(shader.rwTextures, shader.nRwTextures, sizeof(ShaderResource), resourceComp);
+		qsort(shader.structBuffers, shader.nStructBuffers, sizeof(ShaderResource), resourceComp);
+		qsort(shader.rwBuffers, shader.nRwBuffers, sizeof(ShaderResource), resourceComp);
+
     }
     if (csRefl) csRefl->Release();
 
@@ -1847,13 +1936,49 @@ IndexBufferID Direct3D11Renderer::addIndexBuffer(const uint nIndices, const uint
 	return indexBuffers.add(ib);
 }
 
-StructuredBufferID Direct3D11Renderer::addStructuredBuffer(const uint stride, const uint size)
+StructuredBufferID Direct3D11Renderer::addStructuredBuffer(const uint stride, const uint numElements, const bool addUAV)
 {
+	uint size = stride * numElements;
+
+	ASSERT(size % 16 == 0);
+	ASSERT(size % stride == 0);
+
 	StructuredBuffer sb;
 	sb.size = size;
 	sb.stride = stride;
 
-	//TODO
+	D3D11_BUFFER_DESC desc{};
+	desc.Usage = usage[DEFAULT];
+	desc.ByteWidth = size;
+	desc.CPUAccessFlags = 0;
+	desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	desc.StructureByteStride = stride;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	if (addUAV)
+	{
+		desc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+	}
+
+	if (FAILED(device->CreateBuffer(&desc, NULL, &sb.structuredBuffer)))
+	{
+		ErrorMsg("Couldn't create structured buffer");
+		return IB_NONE;
+	}
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc{};
+	viewDesc.Format = DXGI_FORMAT_UNKNOWN;
+	viewDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	viewDesc.Buffer.NumElements = numElements;
+	device->CreateShaderResourceView(sb.structuredBuffer, &viewDesc, &sb.srv);
+
+	if (addUAV)
+	{
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+		uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		uavDesc.Buffer.NumElements = numElements;
+		device->CreateUnorderedAccessView(sb.structuredBuffer, &uavDesc, &sb.uav);
+	}
 
 	return structuredBuffers.add(sb);
 }
@@ -2033,26 +2158,15 @@ void Direct3D11Renderer::setTexture(const char *textureName, const TextureID tex
 	const ShaderResource *s = getShaderResource(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
 	if (s)
 	{
-		if (s->vsIndex >= 0)
+		for (uint i = 0; i < Shader_Count; ++i)
 		{
-			selectedTexturesVS[s->vsIndex] = texture;
-			selectedTextureSlicesVS[s->vsIndex] = NO_SLICE;
+			int varIndex = s->varIndex[i];
+			if (varIndex >= 0)
+			{
+				selectedTextures[i][varIndex] = texture;
+				selectedTextureSlices[i][varIndex] = NO_SLICE;
+			}
 		}
-		if (s->gsIndex >= 0)
-		{
-			selectedTexturesGS[s->gsIndex] = texture;
-			selectedTextureSlicesGS[s->gsIndex] = NO_SLICE;
-		}
-		if (s->psIndex >= 0)
-		{
-			selectedTexturesPS[s->psIndex] = texture;
-			selectedTextureSlicesPS[s->psIndex] = NO_SLICE;
-		}
-        if (s->csIndex >= 0)
-        {
-            selectedTexturesCS[s->csIndex] = texture;
-            selectedTextureSlicesCS[s->csIndex] = NO_SLICE;
-        }
 	}
 	else
 	{
@@ -2071,30 +2185,16 @@ void Direct3D11Renderer::setTexture(const char *textureName, const TextureID tex
 	const ShaderResource *s = getShaderResource(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
 	if (s)
 	{
-		if (s->vsIndex >= 0)
+		for (uint i = 0; i < Shader_Count; ++i)
 		{
-			selectedTexturesVS[s->vsIndex] = texture;
-			selectedTextureSlicesVS[s->vsIndex] = NO_SLICE;
-			selectedSamplerStatesVS[s->vsIndex] = samplerState;
+			int varIndex = s->varIndex[i];
+			if (varIndex >= 0)
+			{
+				selectedTextures[i][varIndex] = texture;
+				selectedTextureSlices[i][varIndex] = NO_SLICE;
+				selectedSamplerStates[i][varIndex] = samplerState;
+			}
 		}
-		if (s->gsIndex >= 0)
-		{
-			selectedTexturesGS[s->gsIndex] = texture;
-			selectedTextureSlicesGS[s->gsIndex] = NO_SLICE;
-			selectedSamplerStatesGS[s->gsIndex] = samplerState;
-		}
-		if (s->psIndex >= 0)
-		{
-			selectedTexturesPS[s->psIndex] = texture;
-			selectedTextureSlicesPS[s->psIndex] = NO_SLICE;
-			selectedSamplerStatesPS[s->psIndex] = samplerState;
-		}
-        if (s->csIndex >= 0)
-        {
-            selectedTexturesCS[s->csIndex] = texture;
-            selectedTextureSlicesCS[s->csIndex] = NO_SLICE;
-            selectedSamplerStatesCS[s->csIndex] = samplerState;
-        }
 	}
 	else
 	{
@@ -2113,26 +2213,15 @@ void Direct3D11Renderer::setTextureSlice(const char *textureName, const TextureI
 	const ShaderResource *s = getShaderResource(shaders[selectedShader].textures, shaders[selectedShader].nTextures, textureName);
 	if (s)
 	{
-		if (s->vsIndex >= 0)
+		for (uint i = 0; i < Shader_Count; ++i)
 		{
-			selectedTexturesVS[s->vsIndex] = texture;
-			selectedTextureSlicesVS[s->vsIndex] = slice;
+			int varIndex = s->varIndex[i];
+			if (varIndex >= 0)
+			{
+				selectedTextures[i][varIndex] = texture;
+				selectedTextureSlices[i][varIndex] = slice;
+			}
 		}
-		if (s->gsIndex >= 0)
-		{
-			selectedTexturesGS[s->gsIndex] = texture;
-			selectedTextureSlicesGS[s->gsIndex] = slice;
-		}
-		if (s->psIndex >= 0)
-		{
-			selectedTexturesPS[s->psIndex] = texture;
-			selectedTextureSlicesPS[s->psIndex] = slice;
-		}
-        if (s->csIndex >= 0)
-        {
-            selectedTexturesCS[s->csIndex] = texture;
-            selectedTextureSlicesPS[s->csIndex] = slice;
-        }
 	}
 	else
 	{
@@ -2150,9 +2239,9 @@ void Direct3D11Renderer::setUnorderedAccessTexture( const char *textureName, con
     const ShaderResource *s = getShaderResource(shaders[selectedShader].rwTextures, shaders[selectedShader].nRwTextures, textureName);
     if (s)
     {
-        if (s->csIndex >= 0)
+        if (s->varIndex[Shader_CS] >= 0)
         {
-            selectedRwTexturesCS[s->csIndex] = texture;
+            selectedRwTexturesCS[s->varIndex[Shader_CS]] = texture;
         }
     }
     else
@@ -2165,37 +2254,112 @@ void Direct3D11Renderer::setUnorderedAccessTexture( const char *textureName, con
     }
 }
 
-bool fillUAV(ID3D11UnorderedAccessView **dest, int &min, int &max, const TextureID selectedTextures[], TextureID currentTextures[], const Texture *textures)
+void Direct3D11Renderer::setStructBuffer(const char* bufferName, const StructuredBufferID buffer)
 {
-    min = 0;
-    do
-    {
-        if (selectedTextures[min] != currentTextures[min])
-        {
-            max = MAX_UAV;
-            do
-            {
-                max--;
-            } while (selectedTextures[max] == currentTextures[max]);
+	ASSERT(selectedShader != SHADER_NONE);
+	const ShaderResource *s = getShaderResource(shaders[selectedShader].structBuffers, shaders[selectedShader].nStructBuffers, bufferName);
+	if (s)
+	{
+		for (uint i = 0; i < Shader_Count; ++i)
+		{
+			int varIndex = s->varIndex[i];
+			if (varIndex >= 0)
+			{
+				selectedStructBuffers[i][varIndex] = buffer;
+			}
+		}
+	}
+	else
+	{
+#ifdef DEBUG
+		char str[256];
+		sprintf(str, "Invalid buffer \"%s\"", bufferName);
+		outputDebugString(str);
+#endif
+	}
+}
 
-            for (int i = min; i <= max; i++)
-            {
-                if (selectedTextures[i] != TEXTURE_NONE)
-                {
-                    *dest++ = textures[selectedTextures[i]].uav;
-                }
-                else
-                {
-                    *dest++ = NULL;
-                }
-                currentTextures[i] = selectedTextures[i];
-            }
-            return true;
-        }
-        min++;
-    } while (min < MAX_UAV);
+void Direct3D11Renderer::setReadWriteBuffer(const char* bufferName, const StructuredBufferID buffer)
+{
+	ASSERT(selectedShader != SHADER_NONE);
+	const ShaderResource *s = getShaderResource(shaders[selectedShader].rwBuffers, shaders[selectedShader].nRwBuffers, bufferName);
+	if (s)
+	{
+		if (s->varIndex[Shader_CS] >= 0)
+		{
+			selectedRwBuffers[s->varIndex[Shader_CS]] = buffer;
+		}
+	}
+	else
+	{
+#ifdef DEBUG
+		char str[256];
+		sprintf(str, "Invalid texture \"%s\"", bufferName);
+		outputDebugString(str);
+#endif
+	}
+}
 
-    return false;
+template <class Resource, class ViewType>
+struct ResourceView
+{
+	static ViewType* Get(const Resource& res)
+	{
+		static_assert(false, "Not implemented!");
+	}
+};
+
+template <class Resource>
+struct ResourceView<Resource, ID3D11ShaderResourceView>
+{
+	static ID3D11ShaderResourceView* Get(const Resource& res)
+	{
+		return res.srv;
+	}
+};
+
+
+template <class Resource>
+struct ResourceView<Resource, ID3D11UnorderedAccessView>
+{
+	static ID3D11UnorderedAccessView* Get(const Resource& res)
+	{
+		return res.uav;
+	}
+};
+
+template <class Resource, class ViewType>
+bool fillViews(ViewType **dest, int &min, int &max, const int selectedResourceIds[], int currentResourceIds[], const Resource *resources, const uint maxNum)
+{
+	min = 0;
+	do
+	{
+		if (selectedResourceIds[min] != currentResourceIds[min])
+		{
+			max = maxNum;
+			do
+			{
+				max--;
+			} while (selectedResourceIds[max] == currentResourceIds[max]);
+
+			for (int i = min; i <= max; i++)
+			{
+				if (selectedResourceIds[i] != TEXTURE_NONE)
+				{
+					*dest++ = ResourceView<Resource, ViewType>::Get(resources[selectedResourceIds[i]]);
+				}
+				else
+				{
+					*dest++ = NULL;
+				}
+				currentResourceIds[i] = selectedResourceIds[i];
+			}
+			return true;
+		}
+		min++;
+	} while (static_cast<uint>(min) < maxNum);
+
+	return false;
 }
 
 bool fillSRV(ID3D11ShaderResourceView **dest, int &min, int &max, const TextureID selectedTextures[], TextureID currentTextures[], const TextureID selectedTextureSlices[], TextureID currentTextureSlices[], const Texture *textures)
@@ -2244,21 +2408,26 @@ void Direct3D11Renderer::applyTextures()
 	ID3D11ShaderResourceView *srViews[MAX_TEXTUREUNIT];
 
 	int min, max;
-	if (fillSRV(srViews, min, max, selectedTexturesVS, currentTexturesVS, selectedTextureSlicesVS, currentTextureSlicesVS, textures.getArray()))
-		context->VSSetShaderResources(min, max - min + 1, srViews);
-
-	if (fillSRV(srViews, min, max, selectedTexturesGS, currentTexturesGS, selectedTextureSlicesGS, currentTextureSlicesGS, textures.getArray()))
-		context->GSSetShaderResources(min, max - min + 1, srViews);
-
-	if (fillSRV(srViews, min, max, selectedTexturesPS, currentTexturesPS, selectedTextureSlicesPS, currentTextureSlicesPS, textures.getArray()))
-		context->PSSetShaderResources(min, max - min + 1, srViews);
-    
-    if (fillSRV(srViews, min, max, selectedTexturesCS, currentTexturesCS, selectedTextureSlicesCS, currentTextureSlicesCS, textures.getArray()))
-        context->CSSetShaderResources(min, max - min + 1, srViews);
+	for (uint i = 0; i < Shader_Count; ++i)
+	{
+		if (fillSRV(srViews, min, max, selectedTextures[i], currentTextures[i], selectedTextureSlices[i], currentTextureSlices[i], textures.getArray()))
+			setShaderResourceViews(static_cast<ShaderType>(i), min, max - min + 1, context, srViews);
+	}
 
     ID3D11UnorderedAccessView *uaViews[MAX_UAV];
-    if (fillUAV(uaViews, min, max, selectedRwTexturesCS, currentRwTexturesCS, textures.getArray()))
+    if (fillViews(uaViews, min, max, selectedRwTexturesCS, currentRwTexturesCS, textures.getArray(), MAX_UAV))
         context->CSSetUnorderedAccessViews(min, max - min + 1, uaViews, NULL);
+
+	ID3D11ShaderResourceView *bufferViews[MAX_STRUCT_BUFFER];
+	for (uint i = 0; i < Shader_Count; ++i)
+	{
+		if (fillViews(bufferViews, min, max, selectedStructBuffers[i], currentStructBuffers[i], structuredBuffers.getArray(), MAX_STRUCT_BUFFER))
+			setShaderResourceViews(static_cast<ShaderType>(i), min, max - min + 1, context, srViews);
+	}
+
+	ID3D11UnorderedAccessView *bufferUAVs[MAX_STRUCT_BUFFER];
+	if (fillViews(bufferUAVs, min, max, selectedRwBuffers, currentRwBuffers, structuredBuffers.getArray(), MAX_STRUCT_BUFFER))
+		context->CSSetUnorderedAccessViews(min, max - min + 1, bufferUAVs, NULL);
 }
 
 void Direct3D11Renderer::setSamplerState(const char *samplerName, const SamplerStateID samplerState)
@@ -2268,10 +2437,14 @@ void Direct3D11Renderer::setSamplerState(const char *samplerName, const SamplerS
 	const ShaderResource *s = getShaderResource(shaders[selectedShader].samplers, shaders[selectedShader].nSamplers, samplerName);
 	if (s)
 	{
-		if (s->vsIndex >= 0) selectedSamplerStatesVS[s->vsIndex] = samplerState;
-		if (s->gsIndex >= 0) selectedSamplerStatesGS[s->gsIndex] = samplerState;
-		if (s->psIndex >= 0) selectedSamplerStatesPS[s->psIndex] = samplerState;
-        if (s->csIndex >= 0) selectedSamplerStatesCS[s->csIndex] = samplerState;
+		for (uint i = 0; i < Shader_Count; ++i)
+		{
+			int varIndex = s->varIndex[i];
+			if (varIndex >= 0)
+			{
+				selectedSamplerStates[i][varIndex] = samplerState;
+			}
+		}
 	}
 	else
 	{
@@ -2321,17 +2494,11 @@ void Direct3D11Renderer::applySamplerStates()
 	ID3D11SamplerState *samplers[MAX_SAMPLERSTATE];
 
 	int min, max;
-	if (fillSS(samplers, min, max, selectedSamplerStatesVS, currentSamplerStatesVS, samplerStates.getArray()))
-		context->VSSetSamplers(min, max - min + 1, samplers);
-
-	if (fillSS(samplers, min, max, selectedSamplerStatesGS, currentSamplerStatesGS, samplerStates.getArray()))
-		context->GSSetSamplers(min, max - min + 1, samplers);
-
-	if (fillSS(samplers, min, max, selectedSamplerStatesPS, currentSamplerStatesPS, samplerStates.getArray()))
-		context->PSSetSamplers(min, max - min + 1, samplers);
-
-    if (fillSS(samplers, min, max, selectedSamplerStatesCS, currentSamplerStatesCS, samplerStates.getArray()))
-        context->CSSetSamplers(min, max - min + 1, samplers);
+	for (uint i = 0; i < Shader_Count; ++i)
+	{
+		if (fillSS(samplers, min, max, selectedSamplerStates[i], currentSamplerStates[i], samplerStates.getArray()))
+			setSamplerState(static_cast<ShaderType>(i), min, max - min + 1, context, samplers);
+	}
 }
 
 void Direct3D11Renderer::setShaderConstantRaw(const char *name, const void *data, const int size)
@@ -2445,12 +2612,12 @@ void Direct3D11Renderer::applyConstants()
 void Direct3D11Renderer::changeRenderTargets(const TextureID *colorRTs, const uint nRenderTargets, const TextureID depthRT, const int depthSlice, const int *slices)
 {
 	// Reset bound textures
-	for (int i = 0; i < MAX_TEXTUREUNIT; i++)
+	for (int i = 0; i < Shader_Count; ++i)
 	{
-		selectedTexturesVS[i] = TEXTURE_NONE;
-		selectedTexturesGS[i] = TEXTURE_NONE;
-		selectedTexturesPS[i] = TEXTURE_NONE;
-        selectedTexturesCS[i] = TEXTURE_NONE;
+		for (int j = 0; j < MAX_TEXTUREUNIT; ++j)
+		{
+			selectedTextures[i][j] = TEXTURE_NONE;
+		}
 	}
 	applyTextures();
 
@@ -2533,11 +2700,12 @@ void Direct3D11Renderer::changeRenderTargets(const TextureID *colorRTs, const ui
 void Direct3D11Renderer::changeToMainFramebuffer()
 {
 	// Reset bound textures
-	for (int i = 0; i < MAX_TEXTUREUNIT; i++)
+	for (int i = 0; i < Shader_Count; ++i)
 	{
-		selectedTexturesVS[i] = TEXTURE_NONE;
-		selectedTexturesGS[i] = TEXTURE_NONE;
-		selectedTexturesPS[i] = TEXTURE_NONE;
+		for (int j = 0; j < MAX_TEXTUREUNIT; ++j)
+		{
+			selectedTextures[i][j] = TEXTURE_NONE;
+		}
 	}
 	applyTextures();
 
@@ -2898,6 +3066,46 @@ void Direct3D11Renderer::drawTextured(const Primitives primitives, TexVertex *ve
 
 	context->IASetPrimitiveTopology(d3dPrim[primitives]);
 	context->Draw(nVertices, 0);
+}
+
+void Direct3D11Renderer::setShaderResourceViews(ShaderType shaderType, uint startSlot, uint numViews, ID3D11DeviceContext* context, ID3D11ShaderResourceView** views)
+{
+	if (shaderType == Shader_VS)
+	{
+		context->VSSetShaderResources(startSlot, numViews, views);
+	}
+	else if (shaderType == Shader_GS)
+	{
+		context->GSSetShaderResources(startSlot, numViews, views);
+	}
+	else if (shaderType == Shader_PS)
+	{
+		context->PSSetShaderResources(startSlot, numViews, views);
+	}
+	else if (shaderType == Shader_CS)
+	{
+		context->CSSetShaderResources(startSlot, numViews, views);
+	}
+}
+
+void Direct3D11Renderer::setSamplerState(ShaderType shaderType, uint startSlot, uint numSamplers, ID3D11DeviceContext* context, ID3D11SamplerState** samplerStates)
+{
+	if (shaderType == Shader_VS)
+	{
+		context->VSSetSamplers(startSlot, numSamplers, samplerStates);
+	}
+	else if (shaderType == Shader_GS)
+	{
+		context->GSSetSamplers(startSlot, numSamplers, samplerStates);
+	}
+	else if (shaderType == Shader_PS)
+	{
+		context->PSSetSamplers(startSlot, numSamplers, samplerStates);
+	}
+	else if (shaderType == Shader_CS)
+	{
+		context->CSSetSamplers(startSlot, numSamplers, samplerStates);
+	}
 }
 
 ID3D11ShaderResourceView *Direct3D11Renderer::createSRV(ID3D11Resource *resource, DXGI_FORMAT format, const int firstSlice, const int sliceCount)

@@ -34,6 +34,15 @@
 #define VB_INVALID (-2)
 */
 
+enum ShaderType
+{
+	Shader_VS,
+	Shader_GS,
+	Shader_PS,
+	Shader_CS,
+
+	Shader_Count
+};
 
 class Direct3D11Renderer : public GraphicsDevice
 {
@@ -63,7 +72,7 @@ public:
 	VertexFormatID addVertexFormat(const FormatDesc *formatDesc, const uint nAttribs, const ShaderID shader = SHADER_NONE);
 	VertexBufferID addVertexBuffer(const long size, const BufferAccess bufferAccess, const void *data = NULL);
 	IndexBufferID addIndexBuffer(const uint nIndices, const uint indexSize, const BufferAccess bufferAccess, const void *data = NULL);
-	StructuredBufferID addStructuredBuffer(const uint stride, const uint size);
+	StructuredBufferID addStructuredBuffer(const uint stride, const uint numElements, const bool addUAV);
 
 	SamplerStateID addSamplerState(const Filter filter, const AddressMode s, const AddressMode t, const AddressMode r, const float lod = 0, const uint maxAniso = 16, const int compareFunc = 0, const float *border_color = NULL);
 	BlendStateID addBlendState(const int srcFactorRGB, const int destFactorRGB, const int srcFactorAlpha, const int destFactorAlpha, const int blendModeRGB, const int blendModeAlpha, const int mask = ALL, const bool alphaToCoverage = false);
@@ -76,6 +85,9 @@ public:
 	void setTexture(const char *textureName, const TextureID texture, const SamplerStateID samplerState);
 	void setTextureSlice(const char *textureName, const TextureID texture, const int slice);
     void setUnorderedAccessTexture(const char *textureName, const TextureID texture);
+	void setStructBuffer(const char* bufferName, const StructuredBufferID buffer);
+	void setReadWriteBuffer(const char* bufferName, const StructuredBufferID buffer);
+
 	void applyTextures();
 
 	void setSamplerState(const char *samplerName, const SamplerStateID samplerState);
@@ -124,6 +136,9 @@ public:
 	void finish();
 
 protected:
+	void setShaderResourceViews(ShaderType shaderType, uint startSlot, uint numViews, ID3D11DeviceContext* context, ID3D11ShaderResourceView** views);
+	void setSamplerState(ShaderType shaderType, uint startSlot, uint numSamplers, ID3D11DeviceContext* context, ID3D11SamplerState** samplerStates);
+
 	ID3D11ShaderResourceView *createSRV(ID3D11Resource *resource, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, const int firstSlice = -1, const int sliceCount = -1);
 	ID3D11RenderTargetView   *createRTV(ID3D11Resource *resource, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, const int firstSlice = -1, const int sliceCount = -1);
 	ID3D11DepthStencilView   *createDSV(ID3D11Resource *resource, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, const int firstSlice = -1, const int sliceCount = -1);
@@ -133,23 +148,15 @@ protected:
 	ID3D11RenderTargetView *backBufferRTV;
 	ID3D11DepthStencilView *depthBufferDSV;
 
-	TextureID currentTexturesVS[MAX_TEXTUREUNIT], selectedTexturesVS[MAX_TEXTUREUNIT];
-	TextureID currentTexturesGS[MAX_TEXTUREUNIT], selectedTexturesGS[MAX_TEXTUREUNIT];
-	TextureID currentTexturesPS[MAX_TEXTUREUNIT], selectedTexturesPS[MAX_TEXTUREUNIT];
-    TextureID currentTexturesCS[MAX_TEXTUREUNIT], selectedTexturesCS[MAX_TEXTUREUNIT];
-	int currentTextureSlicesVS[MAX_TEXTUREUNIT], selectedTextureSlicesVS[MAX_TEXTUREUNIT];
-	int currentTextureSlicesGS[MAX_TEXTUREUNIT], selectedTextureSlicesGS[MAX_TEXTUREUNIT];
-	int currentTextureSlicesPS[MAX_TEXTUREUNIT], selectedTextureSlicesPS[MAX_TEXTUREUNIT];
-    int currentTextureSlicesCS[MAX_TEXTUREUNIT], selectedTextureSlicesCS[MAX_TEXTUREUNIT];
+	TextureID currentTextures[Shader_Count][MAX_TEXTUREUNIT], selectedTextures[Shader_Count][MAX_TEXTUREUNIT];
+	int currentTextureSlices[Shader_Count][MAX_TEXTUREUNIT], selectedTextureSlices[Shader_Count][MAX_TEXTUREUNIT];
 
 	TextureID currentRwTexturesCS[MAX_UAV], selectedRwTexturesCS[MAX_UAV];
 
-	SamplerStateID currentSamplerStatesVS[MAX_SAMPLERSTATE], selectedSamplerStatesVS[MAX_SAMPLERSTATE];
-	SamplerStateID currentSamplerStatesGS[MAX_SAMPLERSTATE], selectedSamplerStatesGS[MAX_SAMPLERSTATE];
-	SamplerStateID currentSamplerStatesPS[MAX_SAMPLERSTATE], selectedSamplerStatesPS[MAX_SAMPLERSTATE];
-    SamplerStateID currentSamplerStatesCS[MAX_SAMPLERSTATE], selectedSamplerStatesCS[MAX_SAMPLERSTATE];
+	SamplerStateID currentSamplerStates[Shader_Count][MAX_SAMPLERSTATE], selectedSamplerStates[Shader_Count][MAX_SAMPLERSTATE];
 
-	StructuredBufferID currentStructBuffers[MAX_STRUCT_BUFFER], selectedStructBuffers[MAX_STRUCT_BUFFER];
+	StructuredBufferID currentStructBuffers[Shader_Count][MAX_STRUCT_BUFFER], selectedStructBuffers[Shader_Count][MAX_STRUCT_BUFFER];
+	StructuredBufferID currentRwBuffers[MAX_STRUCT_BUFFER], selectedRwBuffers[MAX_STRUCT_BUFFER];
 
 private:
 	ubyte *mapRollingVB(const uint size);

@@ -159,6 +159,7 @@ public:
 	virtual VertexFormatID addVertexFormat(const FormatDesc *formatDesc, const uint nAttribs, const ShaderID shader = SHADER_NONE) = 0;
 	virtual VertexBufferID addVertexBuffer(const long size, const BufferAccess bufferAccess, const void *data = NULL) = 0;
 	virtual IndexBufferID addIndexBuffer(const uint nIndices, const uint indexSize, const BufferAccess bufferAccess, const void *data = NULL) = 0;
+	virtual StructuredBufferID addStructuredBuffer(const uint stride, const uint numElements, const bool addUAV) = 0;
 
 	virtual SamplerStateID addSamplerState(const Filter filter, const AddressMode s, const AddressMode t, const AddressMode r, const float lod = 0, const uint maxAniso = 16, const int compareFunc = 0, const float *border_color = NULL) = 0;
 	BlendStateID addBlendState(const int srcFactor, const int destFactor, const int blendMode = BM_ADD, const int mask = ALL, const bool alphaToCoverage = false){
@@ -202,6 +203,9 @@ public:
 	virtual void setTextureSlice(const char *textureName, const TextureID texture, const int slice) = 0;
 
     virtual void setUnorderedAccessTexture(const char *textureName, const TextureID texture) = 0;
+
+	virtual void setStructBuffer(const char* bufferName, const StructuredBufferID buffer) = 0;
+	virtual void setReadWriteBuffer(const char* bufferName, const StructuredBufferID buffer) = 0;
 /*
 	virtual void changeTexture(const uint imageUnit, const TextureID texture) = 0;
 	void changeTexture(const char *textureName, const TextureID texture){

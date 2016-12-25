@@ -6,7 +6,7 @@
 #include "../RenderQueue.h"
 #include "../DrawCall.h"
 
-bool SceneObject::Load(const std::string& name, const RenderResourceLoader& resourceLoader, const ShaderCache& shaderCache, RenderStateCache& stateCache)
+bool SceneObject::Load(const std::string& name, const RenderResourceLoader& resourceLoader, ShaderCache& shaderCache, RenderStateCache& stateCache)
 {
 	if ( _model.loadObj(name.c_str()) )
 	{
@@ -59,11 +59,10 @@ void SceneObject::Draw(RenderQueue& renderQueue, uint32 sortKey)
 {
 	for (uint32 i = 0; i < _model.getBatchCount(); ++i)
 	{
-		BatchDrawCall& drawCall = renderQueue.AddRenderCommand<BatchDrawCall>(sortKey + i, &_opaqueRenderState);
+		DrawCallState dcState{ &_opaqueRenderState, _batchMaterials[i] };
+		BatchDrawCall& drawCall = renderQueue.AddRenderCommand<BatchDrawCall>(sortKey + i, dcState);
 		drawCall.batchNumber = i;
 		drawCall.geometry = &_model;
-		drawCall.shaderData = _batchMaterials[i];
-		drawCall.shaderDataCount = 1;
 	}
 }
 

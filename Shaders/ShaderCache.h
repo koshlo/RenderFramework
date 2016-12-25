@@ -17,7 +17,7 @@ class ShaderCache
 public:
 	ShaderCache(GraphicsDevice* device);
 
-	ShaderID GetGeometryShader(RenderPath renderPath) const;
+	ShaderID GetGeometryShader(RenderPath renderPath);
 private:
 	GraphicsDevice* _device;
 	ShaderID _geometryShaders[RenderPath_Count];

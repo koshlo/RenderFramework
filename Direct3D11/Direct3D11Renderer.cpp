@@ -2950,6 +2950,12 @@ void Direct3D11Renderer::drawElements(const Primitives primitives, const int fir
 	context->DrawIndexed(nIndices, firstIndex, 0);
 }
 
+void Direct3D11Renderer::drawElementsInstanced(const Primitives primitives, const uint firstIndex, const uint nIndices, const uint firstVertex, const uint firstInstance, const uint nInstances)
+{
+	context->IASetPrimitiveTopology(d3dPrim[primitives]);
+	context->DrawIndexedInstanced(nIndices, nInstances, firstIndex, firstVertex, firstInstance);
+}
+
 void Direct3D11Renderer::setup2DMode(const float left, const float right, const float top, const float bottom)
 {
 	scaleBias2D.x = 2.0f / (right - left);

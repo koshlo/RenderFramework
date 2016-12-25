@@ -315,6 +315,7 @@ public:
 
 	virtual void drawArrays(const Primitives primitives, const int firstVertex, const int nVertices) = 0;
 	virtual void drawElements(const Primitives primitives, const int firstIndex, const int nIndices, const int firstVertex, const int nVertices) = 0;
+	virtual void drawElementsInstanced(const Primitives primitives, const uint firstIndex, const uint nIndices, const uint firstVertex, const uint firstInstance, const uint nIstances) = 0;
 
 	virtual void setup2DMode(const float left, const float right, const float top, const float bottom) = 0;
 	virtual void drawPlain(const Primitives primitives, vec2 *vertices, const uint nVertices, const BlendStateID blendState, const DepthStateID depthState, const vec4 *color = NULL) = 0;

@@ -11,6 +11,18 @@ class GraphicsDevice;
 
 typedef void(*RenderFunc)(GraphicsDevice* gfxDevice, StateHelper* stateHelper, void* data);
 
+struct IndexedInstancedDrawCall
+{
+	VertexBufferID vertexBuffer;
+	IndexBufferID indexBuffer;
+	uint indexCount;
+	uint instanceCount;
+	uint firstIndex;
+	uint firstVertex;
+	uint firstInstance;
+
+	static void Render(GraphicsDevice* gfxDevice, StateHelper* stateHelper, void* data);
+};
 
 struct BatchDrawCall
 {

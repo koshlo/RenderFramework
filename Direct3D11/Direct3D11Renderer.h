@@ -119,6 +119,7 @@ public:
 
 	void drawArrays(const Primitives primitives, const int firstVertex, const int nVertices);
 	void drawElements(const Primitives primitives, const int firstIndex, const int nIndices, const int firstVertex, const int nVertices);
+	void drawElementsInstanced(const Primitives primitives, const uint firstIndex, const uint nIndices, const uint firstVertex, const uint firstInstance, const uint nIstances);
 
 	void setup2DMode(const float left, const float right, const float top, const float bottom);
 	void drawPlain(const Primitives primitives, vec2 *vertices, const uint nVertices, const BlendStateID blendState, const DepthStateID depthState, const vec4 *color = NULL);

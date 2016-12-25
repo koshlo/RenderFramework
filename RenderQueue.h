@@ -2,11 +2,18 @@
 #define _RENDERER_QUEUE_H_
 
 #include "DrawCall.h"
+#include "Imaging/Image.h"
 #include <vector>
 
 typedef void* RenderCommand;
 struct RenderState;
 typedef const RenderState* RenderStatePtr;
+
+struct DrawCallState
+{
+	RenderStatePtr renderState;
+	ShaderData* shaderData;
+};
 
 struct DispatchGroup
 {
@@ -20,19 +27,18 @@ class RenderQueue
 public:
 	typedef uint32_t SortKeyType;
 
-	RenderQueue();
+	RenderQueue(GraphicsDevice* gfxDevice, uint rtWidth, uint rtHeight, uint rtCount, FORMAT rtFormat, FORMAT depthFormat);
 
-	void SetRenderTargets(TextureID* rts, uint count, TextureID depthRT);
 	void SetClear(bool clearRT, bool clearDepth, float4 clearColor, float depthClearVal);
-	void SetShaderData(ShaderData** shaderData, uint count);
+	void AddShaderData(ShaderData* shaderData);
 
 	template<typename T>
-	T& AddRenderCommand(const SortKeyType& sortKey, const RenderState* renderState)
+	T& AddRenderCommand(const SortKeyType& sortKey, const DrawCallState& drawState)
 	{
 		static_assert(std::is_standard_layout<T>(), "Render command should have standard layout");
 
 		RenderFunc renderFunc = T::Render;
-		void* data = AddDrawCommand(sizeof(T), renderFunc, renderState);
+		void* data = AddDrawCommand(sizeof(T), renderFunc, drawState);
 		_sortingKeys[_currentCommand] = sortKey;
 		T* commandData = static_cast<T*>(data);
 		return *commandData;
@@ -57,7 +63,7 @@ private:
 		return (size + alignment - 1) & alignMask;
 	}
 
-	void* AddDrawCommand(uint dataSize, RenderFunc renderFunc, const RenderState* renderState);
+	void* AddDrawCommand(uint dataSize, RenderFunc renderFunc, const DrawCallState& drawState);
 
 	static const uint MaxCommands = 4096;
 	static const uint BufferSize = MaxCommands * 64;

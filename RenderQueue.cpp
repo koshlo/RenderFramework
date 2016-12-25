@@ -8,7 +8,7 @@
 static const size_t OffsetNextCommand = 0;
 static const size_t OffsetRenderFunc = OffsetNextCommand + sizeof(RenderCommand);
 static const size_t OffsetStatePtr = OffsetRenderFunc + sizeof(RenderFunc);
-static const size_t OffsetData = OffsetStatePtr + sizeof(RenderStatePtr);
+static const size_t OffsetData = OffsetStatePtr + sizeof(DrawCallState);
 
 template <typename T, size_t Offset>
 T* GetCommandData(RenderCommand command)
@@ -36,14 +36,14 @@ void StoreRenderFunc(RenderCommand command, RenderFunc func)
 	*(GetRenderFunc(command)) = func;
 }
 
-RenderStatePtr* GetRenderStatePtr(RenderCommand command)
+DrawCallState* GetDrawStatePtr(RenderCommand command)
 {
-	return GetCommandData<RenderStatePtr, OffsetStatePtr>(command);
+	return GetCommandData<DrawCallState, OffsetStatePtr>(command);
 }
 
-void StoreRenderStatePtr(RenderCommand command, RenderStatePtr renderState)
+void StoreDrawStatePtr(RenderCommand command, const DrawCallState& drawState)
 {
-	*(GetRenderStatePtr(command)) = renderState;
+	*(GetDrawStatePtr(command)) = drawState;
 }
 
 void* GetData(RenderCommand command)
@@ -51,7 +51,7 @@ void* GetData(RenderCommand command)
 	return static_cast<uint8*>(command) + OffsetData;
 }
 
-RenderQueue::RenderQueue() : 
+RenderQueue::RenderQueue(GraphicsDevice* gfxDevice, uint rtWidth, uint rtHeight, uint rtCount, FORMAT rtFormat, FORMAT depthFormat) :
 	_currentCommand(0),
 	_clearRT(false),
 	_clearDepth(false),
@@ -61,14 +61,16 @@ RenderQueue::RenderQueue() :
 	_buffer.resize(BufferSize);
 	_commands[_currentCommand] = _buffer.data();
 	StoreNextCommand(_commands[_currentCommand], _commands[_currentCommand]);
-}
 
-void RenderQueue::SetRenderTargets(TextureID* rts, uint count, TextureID depthRT)
-{
-	ASSERT(count <= MaxRenderTargets);
-	std::copy(rts, rts + count, _renderTargets);
-	_numRenderTargets = count;
-	_depthRT = depthRT;
+	ASSERT(rtCount < MaxRenderTargets);
+	for (uint i = 0; i < rtCount; ++i)
+	{
+		_renderTargets[i] = gfxDevice->addRenderTarget(rtWidth, rtHeight, rtFormat);
+	}
+	if (depthFormat != FORMAT_NONE)
+	{
+		_depthRT = gfxDevice->addRenderDepth(rtWidth, rtHeight, 1, depthFormat);
+	}
 }
 
 void RenderQueue::SetClear(bool clearRT, bool clearDepth, float4 clearColor, float depthClearVal)
@@ -79,11 +81,10 @@ void RenderQueue::SetClear(bool clearRT, bool clearDepth, float4 clearColor, flo
 	_depthClearVal = depthClearVal;
 }
 
-void RenderQueue::SetShaderData(ShaderData** shaderData, uint count)
+void RenderQueue::AddShaderData(ShaderData* shaderData)
 {
-	ASSERT(count <= MaxShaderDataPerQueue);
-	std::copy(shaderData, shaderData + count, _shaderData);
-	_numShaderData = count;
+	_shaderData[_numShaderData++] = shaderData;
+	ASSERT(_numShaderData < MaxShaderDataPerQueue);
 }
 
 void RenderQueue::Sort()
@@ -108,8 +109,9 @@ void RenderQueue::SubmitAll(GraphicsDevice* gfxDevice, StateHelper* stateHelper)
 	{
 		RenderCommand command = _commands[i];
 		RenderFunc func = *GetRenderFunc(command);
-		RenderStatePtr renderState = *GetRenderStatePtr(command);
-		stateHelper->Apply(renderState);
+		DrawCallState& drawState = *GetDrawStatePtr(command);
+		stateHelper->Apply(drawState.renderState);
+		drawState.shaderData->Apply(stateHelper);
 		for (uint iShaderData = 0; iShaderData < _numShaderData; ++iShaderData)
 		{
 			_shaderData[iShaderData]->Apply(stateHelper);
@@ -141,12 +143,12 @@ TextureID RenderQueue::GetRenderTarget(uint index) const
 	return _renderTargets[index];
 }
 
-void* RenderQueue::AddDrawCommand(uint dataSize, RenderFunc renderFunc, const RenderState* renderState)
+void* RenderQueue::AddDrawCommand(uint dataSize, RenderFunc renderFunc, const DrawCallState& drawState)
 {
 	RenderCommand* nextCommandPtr = GetNextCommand(_commands[_currentCommand]);
 	RenderCommand nextCommand = *nextCommandPtr;
 	StoreRenderFunc(nextCommand, renderFunc);
-	StoreRenderStatePtr(nextCommand, renderState);
+	StoreDrawStatePtr(nextCommand, drawState);
 	StoreNextCommand(nextCommand, static_cast<uint8*>(nextCommand) + OffsetData + dataSize);
 	_commands[++_currentCommand] = nextCommand;
 	return GetData(nextCommand);

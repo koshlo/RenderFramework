@@ -20,11 +20,15 @@ ShaderCache::ShaderCache(GraphicsDevice* device)
 
 	for (uint i = 0; i < array_size(_geometryShaders); ++i)
 	{
-		_geometryShaders[i] = _device->addShader(GeometryShaders[i]);
+		_geometryShaders[i] = SHADER_NONE;
 	}
 }
 
-ShaderID ShaderCache::GetGeometryShader(RenderPath renderPath) const
+ShaderID ShaderCache::GetGeometryShader(RenderPath renderPath)
 {
+	if (_geometryShaders[renderPath] == SHADER_NONE)
+	{
+		_geometryShaders[renderPath] = _device->addShader(GeometryShaders[renderPath]);
+	}
 	return _geometryShaders[renderPath];
 }

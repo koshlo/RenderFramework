@@ -6,6 +6,8 @@
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
+#undef BUFFER
+#undef UAV_BUFFER
 
 #define CONSTANT(Name, Type) Type _##Name;
 #define CONSTANT_ARRAY(Name, Type, Size) Type _##Name[Size]; uint _##Name##Count;
@@ -13,6 +15,8 @@
 #define TEXTURE_3D(Name, Type) TextureID _##Name;
 #define SAMPLER_STATE(Name) SamplerStateID _##Name;
 #define UAV_TEXTURE_2D(Name, Type) TextureID _##Name;
+#define BUFFER(Name, Type) StructuredBufferID _##Name;
+#define UAV_BUFFER(Name, Type) StructuredBufferID _##Name;
 
 #elif GENERATION_PASS == GENERATE_ACCESSORS
 
@@ -22,6 +26,8 @@
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
+#undef BUFFER
+#undef UAV_BUFFER
 
 #define ACCESSOR_HELPER(Name, Type) const Type Get##Name() const { return _##Name; } \
 									void Set##Name(Type val) { _##Name = val; }
@@ -40,6 +46,8 @@
 #define TEXTURE_3D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
 #define SAMPLER_STATE(Name) ACCESSOR_HELPER(Name, SamplerStateID)
 #define UAV_TEXTURE_2D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
+#define BUFFER(Name, Type) ACCESSOR_HELPER(Name, StructuredBufferID)
+#define UAV_BUFFER(Name, Type) ACCESSOR_HELPER(Name, StructuredBufferID)
 
 #elif GENERATION_PASS == GENERATE_APPLY
 
@@ -49,6 +57,8 @@
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
+#undef BUFFER
+#undef UAV_BUFFER
 
 #define STR(x) #x
 #define CALL_STATE_HELPER(Name) stateHelper->SetShaderParam(STR(Name), _##Name);
@@ -59,5 +69,7 @@
 #define TEXTURE_3D(Name, Type) stateHelper->SetShaderTexture(STR(Name), _##Name);
 #define SAMPLER_STATE(Name) stateHelper->SetSamplerState(STR(Name), _##Name);
 #define UAV_TEXTURE_2D(Name, Type) stateHelper->SetUnorderedAccessTexture(STR(Name), _##Name);
+#define BUFFER(Name, Type) stateHelper->SetStructBuffer(STR(Name), _##Name);
+#define UAV_BUFFER(Name, Type) stateHelper->SetUAVBuffer(STR(Name), _##Name);
 
 #endif // GERETAION_PASS

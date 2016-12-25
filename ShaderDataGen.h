@@ -45,6 +45,8 @@ private:
 #define TEXTURE_3D(Name, Type) Texture3D<Type> Name
 #define SAMPLER_STATE(Name) SamplerState Name
 #define UAV_TEXTURE_2D(Name, Type) RWTexture2D<Type> Name
+#define BUFFER(Name, Type) StructuredBuffer<Type> Name
+#define UAV_BUFFER(Name, Type) RWStructuredBuffer<Type> Name
 
 #endif // !_SHADER_DATA_GEN_H_
 

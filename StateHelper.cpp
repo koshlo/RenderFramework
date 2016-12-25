@@ -52,6 +52,16 @@ void StateHelper::SetUnorderedAccessTexture(const char* name, TextureID texture)
 	_device->setUnorderedAccessTexture(name, texture);
 }
 
+void StateHelper::SetStructBuffer(const char* name, StructuredBufferID buffer)
+{
+	_device->setStructBuffer(name, buffer);
+}
+
+void StateHelper::SetUAVBuffer(const char* name, StructuredBufferID buffer)
+{
+	_device->setReadWriteBuffer(name, buffer);
+}
+
 void StateHelper::ApplyConstants()
 {
 	_device->applyConstants();

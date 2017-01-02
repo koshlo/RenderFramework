@@ -32,6 +32,11 @@ void StateHelper::SetShaderParam(const char* name, float4x4 matrix)
 	_device->setShaderConstant4x4f(name, matrix);
 }
 
+void StateHelper::SetShaderArray(const char* name, const float* values, uint count)
+{
+	_device->setShaderConstantArray1f(name, values, count);
+}
+
 void StateHelper::SetShaderArray(const char* name, const float4* values, uint count)
 {
 	_device->setShaderConstantArray4f(name, values, count);

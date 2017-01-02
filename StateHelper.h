@@ -20,6 +20,7 @@ public:
 	void SetShaderParam(const char* name, float4 float4Const);
 	void SetShaderParam(const char* name, float4x4 matrix);
 
+	void SetShaderArray(const char* name, const float* values, uint count);
 	void SetShaderArray(const char* name, const float4* values, uint count);
 	
 	void SetShaderTexture(const char* name, TextureID texture);

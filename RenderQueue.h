@@ -50,7 +50,7 @@ public:
 	TextureID GetRenderTarget(uint index) const;
 	TextureID GetDepthTarget() const;
 
-	static void DispatchCompute(StateHelper* stateHelper, const DispatchGroup& group, ShaderID shader, ShaderData** shaderData, uint numShaderData);
+	static void DispatchCompute(StateHelper* stateHelper, const DispatchGroup& group, ShaderID shader, const ShaderData** shaderData, uint numShaderData);
 
 private:
 	typedef std::pair<SortKeyType, RenderCommand> SortKeyPair;

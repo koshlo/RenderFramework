@@ -126,7 +126,7 @@ TextureID RenderQueue::GetDepthTarget() const
 	return _depthRT;
 }
 
-void RenderQueue::DispatchCompute(StateHelper* stateHelper, const DispatchGroup& group, ShaderID shader, ShaderData** shaderData, uint numShaderData)
+void RenderQueue::DispatchCompute(StateHelper* stateHelper, const DispatchGroup& group, ShaderID shader, const ShaderData** shaderData, uint numShaderData)
 {
 	GraphicsDevice* device = stateHelper->GetDevice();
 	device->reset(RESET_UAV);

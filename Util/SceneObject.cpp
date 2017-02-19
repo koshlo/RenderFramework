@@ -29,7 +29,7 @@ bool SceneObject::Load(const std::string& name, const RenderResourceLoader& reso
 		stateDesc.depthOp = GEQUAL;
 		stateDesc.cullState = CULL_BACK;
 
-		_opaqueRenderState = stateCache.GetRenderState(stateDesc);
+		_opaqueForwardState = stateCache.GetRenderState(stateDesc);
 	}
 	return _materialLib.isValid();
 }
@@ -59,7 +59,7 @@ void SceneObject::Draw(RenderQueue& renderQueue, uint32 sortKey)
 {
 	for (uint32 i = 0; i < _model.getBatchCount(); ++i)
 	{
-		DrawCallState dcState{ &_opaqueRenderState, _batchMaterials[i] };
+		DrawCallState dcState{ &_opaqueForwardState, _batchMaterials[i] };
 		BatchDrawCall& drawCall = renderQueue.AddRenderCommand<BatchDrawCall>(sortKey + i, dcState);
 		drawCall.batchNumber = i;
 		drawCall.geometry = &_model;

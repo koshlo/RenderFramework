@@ -28,14 +28,10 @@ struct BatchDrawCall
 {
 	BatchDrawCall() :
 		geometry(nullptr),
-		shaderData(nullptr),
-		shaderDataCount(0),
 		batchNumber(0)
 	{}
 
 	Model* geometry;
-	ShaderData* shaderData;
-	uint shaderDataCount;
 	uint batchNumber;
 
 	static void Render(GraphicsDevice* gfxDevice, StateHelper* stateHelper, void* data);

@@ -26,7 +26,7 @@ private:
 	Model _model;
 	Optional<ObjMaterialLib> _materialLib;
 	std::vector<MaterialShaderData*> _batchMaterials;
-	RenderState _opaqueRenderState;
+	RenderState _opaqueForwardState;
 	ShaderID _geometryShader;
 
 	void PrepareDrawData(GraphicsDevice& gfxDevice);

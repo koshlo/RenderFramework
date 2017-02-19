@@ -8,8 +8,8 @@ namespace
 {
 	const char* GeometryShaders[] =
 	{
-		"ForwardGeometry.fx",
-		"DeferredGeometry.fx"
+		"../RenderFramework/Shaders/ForwardGeometry.fx",
+		"../RenderFramework/Shaders/DeferredGeometry.fx"
 	};
 }
 

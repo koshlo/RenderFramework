@@ -83,5 +83,4 @@ void StateHelper::Apply(const RenderState* renderState)
 	_device->setDepthState(renderState->depthState);
 	_device->setBlendState(renderState->blendState);
 	_device->setRasterizerState(renderState->rasterizerState);
-	_device->apply();
 }

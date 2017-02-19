@@ -14,8 +14,6 @@ public:
 #define GENERATION_PASS GENERATE_APPLY
 #include "ShaderDataGen.def"
 		SHADER_PARAM_LIST
-		stateHelper->ApplyConstants();
-		stateHelper->ApplyTextures();
 	}
 
 #undef GENERATION_PASS
@@ -36,9 +34,6 @@ private:
 
 #else // __cplusplus
 
-#ifndef _SHADER_DATA_GEN_H_
-#define _SHADER_DATA_GEN_H_
-
 #define CONSTANT(Name, Type) Type Name
 #define CONSTANT_ARRAY(Name, Type, Size) Type Name[Size]
 #define TEXTURE_2D(Name, Type) Texture2D<Type> Name
@@ -47,8 +42,6 @@ private:
 #define UAV_TEXTURE_2D(Name, Type) RWTexture2D<Type> Name
 #define BUFFER(Name, Type) StructuredBuffer<Type> Name
 #define UAV_BUFFER(Name, Type) RWStructuredBuffer<Type> Name
-
-#endif // !_SHADER_DATA_GEN_H_
 
 SHADER_PARAM_LIST
 

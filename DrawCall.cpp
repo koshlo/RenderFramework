@@ -1,10 +1,11 @@
 #include "DrawCall.h"
 #include "Renderer.h"
+#include "Util/Model.h"
 
 void BatchDrawCall::Render(GraphicsDevice* gfxDevice, StateHelper* stateHelper, void* data)
 {
 	BatchDrawCall* dc = static_cast<BatchDrawCall*>(data);
-	//ASSERT(false);
+    dc->geometry->drawBatch(gfxDevice, dc->batchNumber);
 }
 
 void IndexedInstancedDrawCall::Render(GraphicsDevice* gfxDevice, StateHelper* stateHelper, void* data)

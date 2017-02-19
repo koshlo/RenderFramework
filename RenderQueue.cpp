@@ -56,7 +56,9 @@ RenderQueue::RenderQueue(GraphicsDevice* gfxDevice, uint rtWidth, uint rtHeight,
 	_clearRT(false),
 	_clearDepth(false),
 	_clearColor(0),
-	_depthClearVal(0)
+	_depthClearVal(0),
+    _numShaderData(0),
+    _numRenderTargets(rtCount)
 {
 	_buffer.resize(BufferSize);
 	_commands[_currentCommand] = _buffer.data();
@@ -71,6 +73,19 @@ RenderQueue::RenderQueue(GraphicsDevice* gfxDevice, uint rtWidth, uint rtHeight,
 	{
 		_depthRT = gfxDevice->addRenderDepth(rtWidth, rtHeight, 1, depthFormat);
 	}
+}
+
+RenderQueue::RenderQueue(GraphicsDevice* gfxDevice, const TextureID* renderTargets, uint rtCount, TextureID depthRT) :
+    RenderQueue(gfxDevice, 0, 0, 0, FORMAT_NONE, FORMAT_NONE)
+{
+    ASSERT(rtCount < MaxRenderTargets);
+
+    _numRenderTargets = rtCount;
+    for (uint i = 0; i < _numRenderTargets; ++i)
+    {
+        _renderTargets[i] = renderTargets[i];
+    }
+    _depthRT = depthRT;
 }
 
 void RenderQueue::SetClear(bool clearRT, bool clearDepth, float4 clearColor, float depthClearVal)
@@ -116,6 +131,7 @@ void RenderQueue::SubmitAll(GraphicsDevice* gfxDevice, StateHelper* stateHelper)
 		{
 			_shaderData[iShaderData]->Apply(stateHelper);
 		}
+        gfxDevice->apply();
 		func(gfxDevice, stateHelper, GetData(command));
 	}
 	_currentCommand = 0;
@@ -135,6 +151,7 @@ void RenderQueue::DispatchCompute(StateHelper* stateHelper, const DispatchGroup&
 	{
 		shaderData[i]->Apply(stateHelper);
 	}
+    device->apply();
 	device->dispatchCompute(group.x, group.y, group.z);
 }
 

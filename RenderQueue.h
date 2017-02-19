@@ -28,7 +28,7 @@ public:
 	typedef uint32_t SortKeyType;
 
 	RenderQueue(GraphicsDevice* gfxDevice, uint rtWidth, uint rtHeight, uint rtCount, FORMAT rtFormat, FORMAT depthFormat);
-
+    RenderQueue(GraphicsDevice* gfxDevice, const TextureID* renderTargets, uint rtCount, TextureID depthRT);
 	void SetClear(bool clearRT, bool clearDepth, float4 clearColor, float depthClearVal);
 	void AddShaderData(ShaderData* shaderData);
 

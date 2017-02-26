@@ -505,11 +505,23 @@ void Direct3D11Renderer::reset(const uint flags)
 		}
 	}
 
+    if (flags & RESET_BUF)
+    {
+        for (uint i = 0; i < Shader_Count; ++i)
+        {
+            for (uint j = 0; j < MAX_STRUCT_BUFFER; ++j)
+            {
+                selectedStructBuffers[i][j] = BUFFER_NONE;
+            }
+        }
+    }
+
 	if (flags & RESET_UAV)
 	{
 		for (uint i = 0; i < MAX_UAV; i++)
 		{
 			selectedRwTexturesCS[i] = TEXTURE_NONE;
+            selectedRwBuffers[i] = BUFFER_NONE;
 		}
 	}
 
@@ -529,22 +541,7 @@ void Direct3D11Renderer::resetToDefaults()
 {
 	GraphicsDevice::resetToDefaults();
 
-	for (uint i = 0; i < Shader_Count; ++i)
-	{
-		for (uint j = 0; j < MAX_TEXTUREUNIT; ++j)
-		{
-			selectedTextures[i][j] = TEXTURE_NONE;
-			selectedTextureSlices[i][j] = NO_SLICE;
-		}
-	}
-
-	for (uint i = 0; i < Shader_Count; ++i)
-	{
-		for (uint j = 0; j < MAX_SAMPLERSTATE; ++j)
-		{
-			currentSamplerStates[i][j] = SS_NONE;
-		}
-	}
+    reset(RESET_ALL);
 
 	// TODO: Fix ...
 	currentRasterizerState = -2;
@@ -1464,7 +1461,7 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 				shader.samplers[shader.nSamplers].varIndex[Shader_VS] = siDesc.BindPoint;
 				shader.nSamplers++;
 			}
-			else if (siDesc.Type == D3D10_SIT_TBUFFER)
+			else if (siDesc.Type == D3D_SIT_STRUCTURED)
 			{
 				shader.structBuffers[shader.nStructBuffers].name = new char[length + 1];
 				strcpy(shader.structBuffers[shader.nStructBuffers].name, siDesc.Name);
@@ -1530,7 +1527,7 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 					shader.textures[merge].varIndex[Shader_GS] = siDesc.BindPoint;
 				}
 			}
-			else if (siDesc.Type == D3D10_SIT_TBUFFER)
+			else if (siDesc.Type == D3D_SIT_STRUCTURED)
 			{
 				int merge = -1;
 				for (uint i = 0; i < maxStructures; i++)
@@ -1613,7 +1610,7 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 					shader.samplers[merge].varIndex[Shader_PS] = siDesc.BindPoint;
 				}
 			}
-			else if (siDesc.Type == D3D10_SIT_TBUFFER)
+			else if (siDesc.Type == D3D_SIT_STRUCTURED)
 			{
 				int merge = -1;
 				for (uint i = 0; i < maxStructures; i++)
@@ -1777,7 +1774,7 @@ ShaderID Direct3D11Renderer::addComputeShader( const char* src, const char** dif
 				currentRes = &shader.samplers[shader.nSamplers];
                 shader.nSamplers++;
             }
-			else if (siDesc.Type == D3D10_SIT_TBUFFER)
+			else if (siDesc.Type == D3D_SIT_STRUCTURED)
 			{
 				currentRes = &shader.structBuffers[shader.nStructBuffers];
 				shader.nStructBuffers++;
@@ -2422,7 +2419,7 @@ void Direct3D11Renderer::applyTextures()
 	for (uint i = 0; i < Shader_Count; ++i)
 	{
 		if (fillViews(bufferViews, min, max, selectedStructBuffers[i], currentStructBuffers[i], structuredBuffers.getArray(), MAX_STRUCT_BUFFER))
-			setShaderResourceViews(static_cast<ShaderType>(i), min, max - min + 1, context, srViews);
+			setShaderResourceViews(static_cast<ShaderType>(i), min, max - min + 1, context, bufferViews);
 	}
 
 	ID3D11UnorderedAccessView *bufferUAVs[MAX_STRUCT_BUFFER];

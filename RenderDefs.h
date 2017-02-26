@@ -91,6 +91,7 @@ enum AddressMode {
 #define TEXTURE_NONE  (-1)
 #define SHADER_NONE   (-1)
 #define BLENDING_NONE (-1)
+#define BUFFER_NONE   (-1)
 #define VF_NONE   (-1)
 #define VB_NONE   (-1)
 #define IB_NONE   (-1)
@@ -141,6 +142,8 @@ enum AddressMode {
 #define RESET_SS     0x80
 #define RESET_TEX    0x100
 #define RESET_UAV	 0x200
+#define RESET_BUF    0x400
+#define RESET_RES    (RESET_TEX | RESET_UAV | RESET_BUF | RESET_SS)
 
 enum BufferAccess {
 	STATIC,

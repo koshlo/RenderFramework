@@ -9,4 +9,4 @@ CONSTANT(SampleParams, float4); \
 CONSTANT(BlurHalfSize, uint); \
 CONSTANT_ARRAY(Weights, float4, MAX_BLUR_SIZE / 4);
 
-#include "../RenderFramework/ShaderDataGen.h"
+#include "../ShaderDataGen.h"

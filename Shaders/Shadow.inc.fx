@@ -2,6 +2,7 @@
 #define LIGHT_BLEAD_REDUCTION 0.3f
 
 #include "Shadow.data.fx"
+#include "ExpWarping.data.fx"
 
 #define ExponentialWarpPower ExpPower.x
 

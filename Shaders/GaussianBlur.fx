@@ -12,7 +12,6 @@ static float2 TextureSize = SampleParams.xy;
 static float2 SampleStep = SampleParams.zw;
 static float WeightsPacked[MAX_BLUR_SIZE] = (float[MAX_BLUR_SIZE])Weights;
 static uint2 MaxThreads = uint2(THREAD_COUNT_X, THREAD_COUNT_Y);
-static uint2 NumScatteredCacheWrites = ( uint2(BlurHalfSize, BlurHalfSize) * 2 - 1 ) / MaxThreads + 1;
 static uint2 CacheOffset = uint2(MAX_BLUR_SIZE, MAX_BLUR_SIZE);
 
 uint PackFloat2(float2 value)
@@ -86,41 +85,6 @@ void GatherTextureCache(uint3 threadId, uint3 groupThreadId, uint3 groupId, uint
 		TextureCache[addCacheCoords.x][addCacheCoords.y] = PackFloat2(SourceTexture[ClampCoords(threadId.xy + int2(0, i+1))]);
 	}
 }
-
-/*
-void GatherTextureCacheScattered(uint3 threadId, uint3 groupThreadId, uint3 groupId, uint groupIndex)
-{
-	float2 cacheCoords = GetCacheCoords(groupThreadId);
-	
-	uint2 groupOrigin = threadId.xy - groupThreadId.xy;
-	uint2 groupEnd = groupOrigin + MaxThreads - 1;
-
-	uint2 localOrigin = GetCacheCoords(0);
-	uint2 localEnd = GetCacheCoords(MaxThreads - 1);
-
-	TextureCache[cacheCoords.x][cacheCoords.y] = PackFloat2(SourceTexture[threadId.xy]);
-	
-	int2 additionalWrites = NumScatteredCacheWrites * SampleStep;	
-
-	int2 readFromRight = groupThreadId % 2;
-	int2 diffSign = readFromRight * 2 - 1;
-	int2 sourceCoord = lerp(groupOrigin, groupEnd, readFromRight);
-	int2 cacheWriteCoord = lerp(localOrigin, localEnd, readFromRight);
-
-	for (int horIndex = 1; horIndex <= additionalWrites.x; horIndex++)
-	{
-		int i = ( groupThreadId.x + (horIndex-1) * THREAD_COUNT_X ) % (BlurHalfSize * 2); 		
-		int diff = (i * additionalWrites.x + horIndex) * diffSign.x % (int)(BlurHalfSize + 1);
-		TextureCache[cacheWriteCoord.x + diff][groupThreadId.y + CacheOffset.y] = PackFloat2(SourceTexture[float2(sourceCoord.x + diff, threadId.y)]);
-	}
-	for (int vertIndex = 1; vertIndex <= additionalWrites.y; vertIndex++)
-	{
-		int i = groupThreadId.y % BlurHalfSize;		
-		int diff = (i * additionalWrites.y + vertIndex) * diffSign.y % (int)(BlurHalfSize + 1);
-		TextureCache[groupThreadId.x + CacheOffset.x][cacheWriteCoord.y + diff] = PackFloat2(SourceTexture[float2(threadId.x, sourceCoord.y + diff)]);
-	}
-}
-*/
 
 float2 BlurPixel(uint2 coords, float weight)
 {

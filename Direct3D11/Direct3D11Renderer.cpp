@@ -2405,15 +2405,20 @@ void Direct3D11Renderer::applyTextures()
 	ID3D11ShaderResourceView *srViews[MAX_TEXTUREUNIT];
 
 	int min, max;
+
+    ID3D11UnorderedAccessView *uaViews[MAX_UAV];
+    if (fillViews(uaViews, min, max, selectedRwTexturesCS, currentRwTexturesCS, textures.getArray(), MAX_UAV))
+        context->CSSetUnorderedAccessViews(min, max - min + 1, uaViews, NULL);
+
 	for (uint i = 0; i < Shader_Count; ++i)
 	{
 		if (fillSRV(srViews, min, max, selectedTextures[i], currentTextures[i], selectedTextureSlices[i], currentTextureSlices[i], textures.getArray()))
 			setShaderResourceViews(static_cast<ShaderType>(i), min, max - min + 1, context, srViews);
 	}
 
-    ID3D11UnorderedAccessView *uaViews[MAX_UAV];
-    if (fillViews(uaViews, min, max, selectedRwTexturesCS, currentRwTexturesCS, textures.getArray(), MAX_UAV))
-        context->CSSetUnorderedAccessViews(min, max - min + 1, uaViews, NULL);
+    ID3D11UnorderedAccessView *bufferUAVs[MAX_STRUCT_BUFFER];
+    if (fillViews(bufferUAVs, min, max, selectedRwBuffers, currentRwBuffers, structuredBuffers.getArray(), MAX_STRUCT_BUFFER))
+        context->CSSetUnorderedAccessViews(min, max - min + 1, bufferUAVs, NULL);
 
 	ID3D11ShaderResourceView *bufferViews[MAX_STRUCT_BUFFER];
 	for (uint i = 0; i < Shader_Count; ++i)
@@ -2421,10 +2426,6 @@ void Direct3D11Renderer::applyTextures()
 		if (fillViews(bufferViews, min, max, selectedStructBuffers[i], currentStructBuffers[i], structuredBuffers.getArray(), MAX_STRUCT_BUFFER))
 			setShaderResourceViews(static_cast<ShaderType>(i), min, max - min + 1, context, bufferViews);
 	}
-
-	ID3D11UnorderedAccessView *bufferUAVs[MAX_STRUCT_BUFFER];
-	if (fillViews(bufferUAVs, min, max, selectedRwBuffers, currentRwBuffers, structuredBuffers.getArray(), MAX_STRUCT_BUFFER))
-		context->CSSetUnorderedAccessViews(min, max - min + 1, bufferUAVs, NULL);
 }
 
 void Direct3D11Renderer::setSamplerState(const char *samplerName, const SamplerStateID samplerState)

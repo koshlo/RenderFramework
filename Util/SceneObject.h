@@ -19,6 +19,7 @@ public:
 	bool Load(const std::string& name, const RenderResourceLoader& resourceLoader, ShaderCache& shaderCache, RenderStateCache& stateCache);
 	
 	void Draw(StateHelper* stateHelper, ShaderID shader, const ShaderData& shaderData) const;
+    void Draw(RenderQueue& renderQueue, const RenderState* renderState, uint32 sortKey);
 	void Draw(RenderQueue& renderQueue, uint32 sortKey);
 	AABB GetBoundingBox() const;
 

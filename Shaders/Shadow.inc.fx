@@ -2,19 +2,7 @@
 #define LIGHT_BLEAD_REDUCTION 0.3f
 
 #include "Shadow.data.fx"
-#include "ExpWarping.data.fx"
-
-#define ExponentialWarpPower ExpPower.x
-
-float WarpDepth(float d)
-{
-	return exp(d * ExponentialWarpPower);
-}
-
-float UnwarpDepth(float warpedDepth)
-{
-	return log(warpedDepth) / ExponentialWarpPower;
-}
+#include "ExpWarping.inc.fx"
 
 float RemapShadow(float shadowValue, float amount)  
 {  

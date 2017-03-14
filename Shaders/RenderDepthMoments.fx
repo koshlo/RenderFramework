@@ -5,8 +5,6 @@ struct VsIn
 	float4 Position : Position;
 };
 
-float4x4 ViewProj;
-
 float4 main(VsIn In) : SV_Position
 {
 	return mul(ViewProj, In.Position);
@@ -14,7 +12,7 @@ float4 main(VsIn In) : SV_Position
 
 [Fragment shader]
 
-#include "Shadow.inc.fx"
+#include "ExpWarping.inc.fx"
 
 float ComputeBias(in float depth)
 {

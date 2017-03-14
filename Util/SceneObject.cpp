@@ -55,15 +55,20 @@ void SceneObject::Draw(StateHelper* stateHelper, ShaderID shader, const ShaderDa
 	}
 }
 
-void SceneObject::Draw(RenderQueue& renderQueue, uint32 sortKey)
+void SceneObject::Draw(RenderQueue& renderQueue, const RenderState* renderState, uint32 sortKey) const
 {
-	for (uint32 i = 0; i < _model.getBatchCount(); ++i)
-	{
-		DrawCallState dcState{ &_opaqueForwardState, _batchMaterials[i] };
-		BatchDrawCall& drawCall = renderQueue.AddRenderCommand<BatchDrawCall>(sortKey + i, dcState);
-		drawCall.batchNumber = i;
-		drawCall.geometry = &_model;
-	}
+    for (uint32 i = 0; i < _model.getBatchCount(); ++i)
+    {
+        DrawCallState dcState{ renderState, _batchMaterials[i] };
+        BatchDrawCall& drawCall = renderQueue.AddRenderCommand<BatchDrawCall>(sortKey + i, dcState);
+        drawCall.batchNumber = i;
+        drawCall.geometry = &_model;
+    }
+}
+
+void SceneObject::Draw(RenderQueue& renderQueue, uint32 sortKey) const
+{
+    Draw(renderQueue, &_opaqueForwardState, sortKey);
 }
 
 AABB SceneObject::GetBoundingBox() const

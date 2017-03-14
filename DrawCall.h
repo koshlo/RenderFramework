@@ -31,7 +31,7 @@ struct BatchDrawCall
 		batchNumber(0)
 	{}
 
-	Model* geometry;
+	const Model* geometry;
 	uint batchNumber;
 
 	static void Render(GraphicsDevice* gfxDevice, StateHelper* stateHelper, void* data);

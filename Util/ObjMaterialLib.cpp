@@ -213,7 +213,7 @@ bool SetMaterialMapProperty(const std::string& currentTok, Tokenizer& tok, Mater
 		{
 			destMaterial->roughnessMap = textureRes;
 		}
-		else
+		else if (currentTok != "map_d")
 		{
 			validProperty = false;
 		}

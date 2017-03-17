@@ -339,6 +339,7 @@ bool D3D11App::createBuffers(const bool sampleBackBuffer)
 		descDSV.Format = descDepth.Format;
 		descDSV.ViewDimension = msaaSamples > 1? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
 		descDSV.Texture2D.MipSlice = 0;
+        descDSV.Flags = 0;
 		if (FAILED(nativeDevice->CreateDepthStencilView(depthBuffer, &descDSV, &depthBufferDSV)))
 			return false;
 	}

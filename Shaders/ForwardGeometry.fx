@@ -11,7 +11,7 @@ struct PsIn
 	float3 Normal   : Normal;
 };
 
-#include "Scene.data.fx"
+#include "View.data.fx"
 
 [Vertex shader]
 
@@ -29,6 +29,7 @@ PsIn main(VsIn In)
 [Fragment shader]
 
 #include "Material.data.fx"
+#include "Lighting.data.fx"
 #include "Shadow.inc.fx"
 
 float4 ScreenToWorld(float2 screenCoords, float depth)
@@ -44,7 +45,7 @@ float4 main(PsIn In) : SV_Target
 	float4 outColor;
 	float sunLighting = saturate( dot(In.Normal, SunDirection) );
 	float visibility = 1.0f;//GetShadow(ScreenToWorld(In.Position.xy, In.Position.z));
-    outColor.rgb = 1.0f;//MaterialDiffuse * (sunLighting * SunIntensity * visibility + Ambient);
+    outColor.rgb = float3(0.8f, 1.0f, 0.8f) * (sunLighting * SunIntensity * visibility + Ambient);
 	outColor.a = 1;
 	return outColor;
 }

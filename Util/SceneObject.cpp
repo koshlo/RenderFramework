@@ -1,7 +1,7 @@
 #include "SceneObject.h"
 #include "ResourceLoader.h"
 #include "../Shaders/Material.data.fx"
-#include "../Shaders/Scene.data.fx"
+#include "../Shaders/View.data.fx"
 #include "../Shaders/ShaderCache.h"
 #include "../RenderQueue.h"
 #include "../DrawCall.h"

@@ -1,5 +1,7 @@
 [Vertex shader]
 
+#include "View.data.fx"
+
 struct VsIn
 {
 	float4 Position : Position;
@@ -7,7 +9,7 @@ struct VsIn
 
 float4 main(VsIn In) : SV_Position
 {
-	return mul(ViewProj, In.Position);
+	return mul(ViewProjection, In.Position);
 }
 
 [Fragment shader]

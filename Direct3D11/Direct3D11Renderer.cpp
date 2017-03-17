@@ -2168,9 +2168,9 @@ void Direct3D11Renderer::setTexture(const char *textureName, const TextureID tex
 	else
 	{
 #ifdef DEBUG
-		char str[256];
-		sprintf(str, "Invalid texture \"%s\"", textureName);
-		outputDebugString(str);
+		//char str[256];
+		//sprintf(str, "Invalid texture \"%s\"", textureName);
+		//outputDebugString(str);
 #endif
 	}
 }
@@ -2447,9 +2447,9 @@ void Direct3D11Renderer::setSamplerState(const char *samplerName, const SamplerS
 	else
 	{
 #ifdef DEBUG
-		char str[256];
-		sprintf(str, "Invalid samplerstate \"%s\"", samplerName);
-		outputDebugString(str);
+		//char str[256];
+		//sprintf(str, "Invalid samplerstate \"%s\"", samplerName);
+		//outputDebugString(str);
 #endif
 	}
 }
@@ -2560,9 +2560,9 @@ void Direct3D11Renderer::setShaderConstantRaw(const char *name, const void *data
 	}
 
 #ifdef DEBUG
-	char str[256];
-	sprintf(str, "Invalid constant \"%s\"", name);
-	outputDebugString(str);
+	//char str[256];
+	//sprintf(str, "Invalid constant \"%s\"", name);
+	//outputDebugString(str);
 #endif
 }
 

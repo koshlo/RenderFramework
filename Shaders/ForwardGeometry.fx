@@ -11,7 +11,6 @@ struct VsIn
 struct PsIn
 {
 	float4 Position : SV_Position;
-    //float3x3 TangentToWorld : TangentToWorld;
     float3 Normal : Normal;
     float3 Tangent : Tangent;
     float3 Bitangent : Bitangent;
@@ -77,8 +76,9 @@ float4 main(PsIn psIn) : SV_Target
 {
 	float4 outColor;
 	//float visibility = 1.0f;//GetShadow(ScreenToWorld(In.Position.xy, In.Position.z));
-    MaterialInfo matInfo = GetMaterialInfo(psIn.TexCoord);
-    SurfaceInfo surfInfo = GetSurfaceInfo(psIn.TexCoord, float3x3(psIn.Tangent, psIn.Bitangent, psIn.Normal), psIn.PositionWS);
+    float2 uv = float2(psIn.TexCoord.x, 1.0f - psIn.TexCoord.y);
+    MaterialInfo matInfo = GetMaterialInfo(uv);
+    SurfaceInfo surfInfo = GetSurfaceInfo(uv, float3x3(psIn.Tangent, psIn.Bitangent, psIn.Normal), psIn.PositionWS);
     outColor.rgb = ComputeDirectLight(matInfo, surfInfo, SunIntensity);
 	outColor.a = 1;
 	return outColor;

@@ -1601,8 +1601,8 @@ ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, c
 					size_t length = strlen(siDesc.Name);
 					shader.samplers[shader.nSamplers].name = new char[length + 1];
 					strcpy(shader.samplers[shader.nSamplers].name, siDesc.Name);
-					initResourceVars(shader.textures[shader.nTextures]);
-					shader.textures[shader.nTextures].varIndex[Shader_PS] = siDesc.BindPoint;
+					initResourceVars(shader.samplers[shader.nTextures]);
+					shader.samplers[shader.nTextures].varIndex[Shader_PS] = siDesc.BindPoint;
 					shader.nSamplers++;
 				}
 				else

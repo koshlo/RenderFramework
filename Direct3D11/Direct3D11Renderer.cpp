@@ -1833,7 +1833,7 @@ VertexFormatID Direct3D11Renderer::addVertexFormat(const FormatDesc *formatDesc,
 		"Texcoord",
 		"Normal",
 		"Tangent",
-		"Binormal",
+		"Bitangent",
 	};
 
 

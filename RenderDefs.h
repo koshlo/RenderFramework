@@ -168,7 +168,7 @@ enum AttributeType {
 	TYPE_TEXCOORD = 2,
 	TYPE_NORMAL = 3,
 	TYPE_TANGENT = 4,
-	TYPE_BINORMAL = 5,
+	TYPE_BITANGENT = 5,
 };
 
 enum AttributeFormat {

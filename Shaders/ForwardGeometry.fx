@@ -2,35 +2,47 @@
 struct VsIn
 {
 	float4 Position : Position;
-	float3 Normal   : Normal;
+	float3 Normal : Normal;
+    float3 Tangent : Tangent;
+    float3 Bitangent : Bitangent;
+    float2 TexCoord : TexCoord;
 };
 
 struct PsIn
 {
 	float4 Position : SV_Position;
-	float3 Normal   : Normal;
+    //float3x3 TangentToWorld : TangentToWorld;
+    float3 Normal : Normal;
+    float3 Tangent : Tangent;
+    float3 Bitangent : Bitangent;
+    float3 PositionWS : PositionWS;
+    float2 TexCoord : TexCoord;
 };
 
 #include "View.data.fx"
 
 [Vertex shader]
 
-PsIn main(VsIn In)
+PsIn main(VsIn vsIn)
 {
-	PsIn Out;
+	PsIn psOut;
 
-	Out.Position = mul(ViewProjection, In.Position);
-	Out.Normal   = In.Normal;
-
-	return Out;
+	psOut.Position = mul(ViewProjection, vsIn.Position);
+    psOut.Tangent = vsIn.Tangent;
+    psOut.Bitangent = vsIn.Bitangent;
+    psOut.Normal = vsIn.Normal;
+    psOut.TexCoord = vsIn.TexCoord;
+    psOut.PositionWS = vsIn.Position.xyz;
+	return psOut;
 }
 
 
 [Fragment shader]
 
-#include "Material.data.fx"
 #include "Lighting.data.fx"
 #include "Shadow.inc.fx"
+#include "Lighting.inc.fx"
+#include "Material.data.fx"
 
 float4 ScreenToWorld(float2 screenCoords, float depth)
 {
@@ -40,12 +52,34 @@ float4 ScreenToWorld(float2 screenCoords, float depth)
 	return worldCoords / worldCoords.w;
 }
 
-float4 main(PsIn In) : SV_Target
+MaterialInfo GetMaterialInfo(float2 uv)
+{
+    MaterialInfo outMat;
+    outMat.albedo = AlbedoMap.Sample(MaterialSampler, uv);
+    outMat.rougness = RoughnessMap.Sample(MaterialSampler, uv);
+    
+    float metallic = MetallicMap.Sample(MaterialSampler, uv);
+    outMat.specular = lerp(0.03f, outMat.albedo, metallic);
+    return outMat;
+}
+
+SurfaceInfo GetSurfaceInfo(float2 uv, float3x3 tangentToWS, float3 posWS)
+{
+    SurfaceInfo outSurfInfo;
+    float3 normalTS = NormalMap.Sample(MaterialSampler, uv) * 2.0f - 1.0f;
+    outSurfInfo.normal = normalize(mul(normalTS, tangentToWS));
+    outSurfInfo.lightDir = normalize(SunDirection);
+    outSurfInfo.viewDir = normalize(EyePos.xyz - posWS);
+    return outSurfInfo;
+}
+
+float4 main(PsIn psIn) : SV_Target
 {
 	float4 outColor;
-	float sunLighting = saturate( dot(In.Normal, SunDirection) );
-	float visibility = 1.0f;//GetShadow(ScreenToWorld(In.Position.xy, In.Position.z));
-    outColor.rgb = float3(0.8f, 1.0f, 0.8f) * (sunLighting * SunIntensity * visibility + Ambient);
+	//float visibility = 1.0f;//GetShadow(ScreenToWorld(In.Position.xy, In.Position.z));
+    MaterialInfo matInfo = GetMaterialInfo(psIn.TexCoord);
+    SurfaceInfo surfInfo = GetSurfaceInfo(psIn.TexCoord, float3x3(psIn.Tangent, psIn.Bitangent, psIn.Normal), psIn.PositionWS);
+    outColor.rgb = ComputeDirectLight(matInfo, surfInfo, SunIntensity);
 	outColor.a = 1;
 	return outColor;
 }

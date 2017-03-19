@@ -42,6 +42,7 @@ void SceneObject::PrepareDrawData(GraphicsDevice& gfxDevice)
 		const std::string& matName = _model.getBatchMaterialName(i);
 		_batchMaterials[i] = _materialLib.getVal().getMaterialShaderData(matName);
 	}
+    _model.computeTangentSpace(false, false);
 	_model.makeDrawable(&gfxDevice, true, _geometryShader);
 }
 

@@ -98,7 +98,7 @@ public:
 	void reverseWinding();
 	bool flipNormals();
 	bool computeNormals(const bool flat = false);
-	bool computeTangentSpace(const bool flat = false);
+	bool computeTangentSpace(const bool flat = false, const bool skipNormals = true);
 	bool addStencilVolume();
 
 	void cleanUp();

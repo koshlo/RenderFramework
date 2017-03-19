@@ -407,7 +407,6 @@ bool Model::loadObj(const char *fileName){
 				}
 
 				currMaterial = getObjMaterial(materials, tok.next());
-				batchMaterials.push_back(materials[currMaterial].name);
 				break;
 			default:
 				tok.goToNextLine();
@@ -455,6 +454,7 @@ bool Model::loadObj(const char *fileName){
 			currIndex += (*mInds)[j + 1];
 		}
 		addBatch(startIndex, currIndex - startIndex);
+        batchMaterials.push_back(materials[i].name);
 		startIndex = currIndex;
 
 		delete materials[i].indices;
@@ -682,7 +682,7 @@ bool Model::loadT3d(const char *fileName, const bool removePortals, const bool r
 	addStream(TYPE_VERTEX,   3, nVertices,        (float *) vertices,  vtxIndices, false);
 	addStream(TYPE_TEXCOORD, 2, nVertices,        (float *) texCoords, texIndices, false);
 	addStream(TYPE_TANGENT,  3, polys.getCount(), (float *) tangents,  tanIndices, false);
-	addStream(TYPE_BINORMAL, 3, polys.getCount(), (float *) binormals, binIndices, false);
+	addStream(TYPE_BITANGENT, 3, polys.getCount(), (float *) binormals, binIndices, false);
 	addStream(TYPE_NORMAL,   3, polys.getCount(), (float *) normals,   nrmIndices, false);
 
 	// Extract batches
@@ -880,7 +880,7 @@ void tangentVectors(const vec3 &v0, const vec3 &v1, const vec3 &v2, const vec2 &
 	normal = normalize(cross(dv0, dv1));
 }
 
-bool Model::computeTangentSpace(const bool flat){
+bool Model::computeTangentSpace(const bool flat, const bool skipNormals){
 	StreamID streams[2] = { findStream(TYPE_VERTEX), findStream(TYPE_TEXCOORD) };
 
 	if (streams[0] < 0 || streams[1] < 0) return false;
@@ -889,7 +889,7 @@ bool Model::computeTangentSpace(const bool flat){
 	uint *indices;
 
 	uint nVertices = assemble(streams, 2, vertexArrays, &indices, true);
-
+    
 	vec3 *vertices  = (vec3 *) vertexArrays[0];
 	vec2 *texCoords = (vec2 *) vertexArrays[1];
 
@@ -898,7 +898,9 @@ bool Model::computeTangentSpace(const bool flat){
 
 		vec3 *tangents  = new vec3[nFaces];
 		vec3 *binormals = new vec3[nFaces];
-		vec3 *normals   = new vec3[nFaces];
+        vec3 *normals;
+        if (!skipNormals) 
+            normals = new vec3[nFaces];
 
 		uint *indicesS = new uint[nIndices];
 		uint *indicesT = new uint[nIndices];
@@ -921,7 +923,8 @@ bool Model::computeTangentSpace(const bool flat){
 
 			tangents [i] = normalize(sdir);
 			binormals[i] = normalize(tdir);
-			normals  [i] = normal;
+            if (!skipNormals)
+			    normals[i] = normal;
 
 			indicesS[3 * i] = indicesS[3 * i + 1] = indicesS[3 * i + 2] = i;
 			indicesT[3 * i] = indicesT[3 * i + 1] = indicesT[3 * i + 2] = i;
@@ -929,19 +932,32 @@ bool Model::computeTangentSpace(const bool flat){
 		}
 
 		addStream(TYPE_TANGENT,  3, nFaces, (float *) tangents,  indicesS, false);
-		addStream(TYPE_BINORMAL, 3, nFaces, (float *) binormals, indicesT, false);
-		addStream(TYPE_NORMAL,   3, nFaces, (float *) normals,   indicesN, false);
+		addStream(TYPE_BITANGENT, 3, nFaces, (float *) binormals, indicesT, false);
+        if (!skipNormals)
+        {
+            StreamID normalStream = findStream(TYPE_NORMAL, 0);
+            if (normalStream != -1)
+            {
+                removeStream(normalStream);
+            }
+            addStream(TYPE_NORMAL, 3, nFaces, (float *)normals, indicesN, false);
+        }        
 
 		delete [] indices;
 
 	} else {
 		vec3 *tangents  = new vec3[nVertices];
 		vec3 *binormals = new vec3[nVertices];
-		vec3 *normals   = new vec3[nVertices];
+        vec3 *normals;
+        int *nCounts = new int[nVertices];
+        if (!skipNormals)
+            normals = new vec3[nVertices];
 
 		memset(tangents,  0, nVertices * sizeof(vec3));
 		memset(binormals, 0, nVertices * sizeof(vec3));
-		memset(normals,   0, nVertices * sizeof(vec3));
+        memset(nCounts, 0, nVertices * sizeof(int));
+		if (!skipNormals)
+            memset(normals,   0, nVertices * sizeof(vec3));
 
 		for (uint i = 0; i < nIndices; i += 3){
 			vec3 v0 = vertices[indices[i    ]];
@@ -966,15 +982,22 @@ bool Model::computeTangentSpace(const bool flat){
 			binormals[indices[i + 1]] += tdir;
 			binormals[indices[i + 2]] += tdir;
 
-			normals[indices[i    ]] += normal;
-			normals[indices[i + 1]] += normal;
-			normals[indices[i + 2]] += normal;
+            if (!skipNormals)
+            {
+                nCounts[indices[i]] += 1;
+                nCounts[indices[i + 1]] += 1;
+                nCounts[indices[i + 2]] += 1;
+                normals[indices[i]] += normal;
+                normals[indices[i + 1]] += normal;
+                normals[indices[i + 2]] += normal;
+            }
 		}
 		
 		for (uint j = 0; j < nVertices; j++){
 			tangents [j] = normalize(tangents [j]);
 			binormals[j] = normalize(binormals[j]);
-			normals  [j] = normalize(normals  [j]);
+            if (!skipNormals)
+			    normals[j] = normalize(normals[j]);
 		}
 
 		uint *indicesS = new uint[nIndices];
@@ -983,8 +1006,16 @@ bool Model::computeTangentSpace(const bool flat){
 		memcpy(indicesT, indices, nIndices * sizeof(uint));
 
 		addStream(TYPE_TANGENT,  3, nVertices, (float *) tangents,  indicesS, false);
-		addStream(TYPE_BINORMAL, 3, nVertices, (float *) binormals, indicesT, false);
-		addStream(TYPE_NORMAL,   3, nVertices, (float *) normals,   indices,  false);
+		addStream(TYPE_BITANGENT, 3, nVertices, (float *) binormals, indicesT, false);
+        if (!skipNormals)
+        {
+            StreamID normalStream = findStream(TYPE_NORMAL, 0);
+            if (normalStream != -1)
+            {
+                removeStream(normalStream);
+            }
+            addStream(TYPE_NORMAL, 3, nVertices, (float *)normals, indices, false);
+        }        
 	}
 
 	delete [] vertices;

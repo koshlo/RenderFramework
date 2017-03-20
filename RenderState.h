@@ -23,14 +23,25 @@ struct RenderStateDesc
 	int32 cullState : 8;
 };
 
+struct SamplerStateDesc
+{
+    int32 filterMode : 8;
+    int32 addressModeS : 8;
+    int32 addressModeT : 8;
+    int32 addressModeR : 8;
+};
+
 class RenderStateCache
 {
 public:
 	RenderStateCache(GraphicsDevice* gfxDevice) : _device(gfxDevice) {}
-	const RenderState& GetRenderState(const RenderStateDesc& stateDesc);
+	const RenderStateRef GetRenderState(const RenderStateDesc& stateDesc);
+    SamplerStateID GetSamplerState(const SamplerStateDesc& samplerDesc);
 private:
 	typedef std::unordered_map<uint64, RenderState> RenderStateMap;
+    typedef std::unordered_map<uint32, SamplerStateID> SamplerStateMap;
 
 	RenderStateMap _renderStates;
+    SamplerStateMap _samplerStates;
 	GraphicsDevice* _device;
 };

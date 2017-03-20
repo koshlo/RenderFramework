@@ -1,6 +1,8 @@
 #ifndef _RENDER_DEFS_H_
 #define _RENDER_DEFS_H_
 
+#include <functional>
+
 #include "Math/Vector.h"
 
 typedef int TextureID;
@@ -25,6 +27,9 @@ struct SamplerState;
 struct BlendState;
 struct DepthState;
 struct RasterizerState;
+
+struct RenderState;
+typedef std::reference_wrapper<RenderState> RenderStateRef;
 
 enum ConstantType {
 	CONSTANT_FLOAT,

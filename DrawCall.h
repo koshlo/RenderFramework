@@ -8,6 +8,7 @@ class Model;
 class ShaderData;
 class StateHelper;
 class GraphicsDevice;
+class RenderStateCache;
 
 typedef void(*RenderFunc)(GraphicsDevice* gfxDevice, StateHelper* stateHelper, void* data);
 
@@ -36,5 +37,4 @@ struct BatchDrawCall
 
 	static void Render(GraphicsDevice* gfxDevice, StateHelper* stateHelper, void* data);
 };
-
 #endif // _DRAW_CALL_H_

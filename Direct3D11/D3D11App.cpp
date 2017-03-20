@@ -219,7 +219,7 @@ bool D3D11App::initAPI(const API_Revision api_revision, const DXGI_FORMAT backBu
 	// Create device and swap chain
 	DWORD deviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 #ifdef _DEBUG
-    //deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+    deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
 	D3D_FEATURE_LEVEL requested_feature_level = (api_revision == D3D11)? D3D_FEATURE_LEVEL_11_0 : (api_revision == D3D10_1)? D3D_FEATURE_LEVEL_10_1 : D3D_FEATURE_LEVEL_10_0;
@@ -302,7 +302,11 @@ bool D3D11App::createBuffers(const bool sampleBackBuffer)
 	if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID *) &backBuffer))) 
 		return false;
 
-	if (FAILED(nativeDevice->CreateRenderTargetView(backBuffer, NULL, &backBufferRTV)))
+    D3D11_RENDER_TARGET_VIEW_DESC backBufferViewDesc{};
+    backBufferViewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    backBufferViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
+	if (FAILED(nativeDevice->CreateRenderTargetView(backBuffer, &backBufferViewDesc, &backBufferRTV)))
 		return false;
 
 	if (sampleBackBuffer)

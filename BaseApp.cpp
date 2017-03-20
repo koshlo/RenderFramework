@@ -295,7 +295,9 @@ void BaseApp::onButtonClicked(PushButton *button){
 
 void BaseApp::drawGUI(){
 	//switchTo2DMode(false);
+    gfxDevice->changeRenderTarget(FB_COLOR, FB_DEPTH);
 	gfxDevice->setup2DMode(0, (float) width, 0, (float) height);
+    gfxDevice->apply();
 
 	if (widgets.goToLast()){
 		// Draw widgets back to front

@@ -2,6 +2,8 @@
 #include "StateHelper.h"
 #include "Renderer.h"
 #include "ShaderData.h"
+#include "RenderState.h"
+#include "Shaders/Blit.data.fx"
 
 #include <algorithm>
 
@@ -134,6 +136,7 @@ void RenderQueue::SubmitAll(GraphicsDevice* gfxDevice, StateHelper* stateHelper)
         gfxDevice->apply();
 		func(gfxDevice, stateHelper, GetData(command));
 	}
+    gfxDevice->changeRenderTargets(nullptr, 0);
 	_currentCommand = 0;
 }
 
@@ -153,6 +156,24 @@ void RenderQueue::DispatchCompute(StateHelper* stateHelper, const DispatchGroup&
 	}
     device->apply();
 	device->dispatchCompute(group.x, group.y, group.z);
+}
+
+void RenderQueue::Blit(StateHelper* stateHelper, RenderStateCache* stateCache, ShaderID shader, TextureID source, TextureID target)
+{
+    GraphicsDevice* gfxDevice = stateHelper->GetDevice();
+    gfxDevice->changeRenderTarget(target, TEXTURE_NONE);
+    gfxDevice->setVertexBuffer(0, VB_NONE);
+    gfxDevice->setIndexBuffer(IB_NONE);
+    gfxDevice->setShader(shader);
+
+    BlitShaderData blitShaderData;
+    blitShaderData.SetSourceTexture(source);
+    SamplerStateID pointSampler = stateCache->GetSamplerState(SamplerStateDesc{ NEAREST, CLAMP, CLAMP, CLAMP });
+    blitShaderData.SetSourceSampler(pointSampler);
+    blitShaderData.Apply(stateHelper);
+
+    gfxDevice->apply();
+    gfxDevice->drawArrays(PRIM_TRIANGLE_STRIP, 0, 4);
 }
 
 TextureID RenderQueue::GetRenderTarget(uint index) const

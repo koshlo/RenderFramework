@@ -51,6 +51,7 @@ public:
 	TextureID GetDepthTarget() const;
 
 	static void DispatchCompute(StateHelper* stateHelper, const DispatchGroup& group, ShaderID shader, const ShaderData** shaderData, uint numShaderData);
+    static void Blit(StateHelper* stateHelper, RenderStateCache* stateCache, ShaderID shader, TextureID source, TextureID target);
 
 private:
 	typedef std::pair<SortKeyType, RenderCommand> SortKeyPair;

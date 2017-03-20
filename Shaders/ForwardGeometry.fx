@@ -75,7 +75,7 @@ SurfaceInfo GetSurfaceInfo(float2 uv, float3x3 tangentToWS, float3 posWS)
 float4 main(PsIn psIn) : SV_Target
 {
 	float4 outColor;
-	//float visibility = 1.0f;//GetShadow(ScreenToWorld(In.Position.xy, In.Position.z));
+	//float visibility = GetShadow(float4(psIn.PositionWS, 1.0f));
     float2 uv = float2(psIn.TexCoord.x, 1.0f - psIn.TexCoord.y);
     MaterialInfo matInfo = GetMaterialInfo(uv);
     SurfaceInfo surfInfo = GetSurfaceInfo(uv, float3x3(psIn.Tangent, psIn.Bitangent, psIn.Normal), psIn.PositionWS);

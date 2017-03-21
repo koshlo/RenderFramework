@@ -14,13 +14,13 @@ public:
 	Optional<typename ResTrait::ReturnType> SyncLoad(const ResourceId<ResTrait>& resId) const;
 
 	template <typename ResTrait>
-	Optional<typename ResTrait::ReturnType> SyncLoad(const ResourceId<ResTrait>& resId, typename ResTrait::InfoType info) const;
+	Optional<typename ResTrait::ReturnType> SyncLoad(const ResourceId<ResTrait>& resId, typename ResTrait::UserData data) const;
 
 	template <typename ResTrait>
 	void SyncLoad(const ResourceId<ResTrait>& resId, Optional<typename ResTrait::ReturnType>* result) const;
 
 	template <typename ResTrait>
-	void SyncLoad(const ResourceId<ResTrait>& resId, typename ResTrait::InfoType info, Optional<typename ResTrait::ReturnType>* result) const;
+	void SyncLoad(const ResourceId<ResTrait>& resId, typename ResTrait::UserData data, Optional<typename ResTrait::ReturnType>* result) const;
 
 	static const char* DataPath();
 	

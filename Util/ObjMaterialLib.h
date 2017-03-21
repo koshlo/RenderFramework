@@ -42,7 +42,7 @@ private:
 	typedef ArrayMap<MaterialResId, Material> MaterialMap;
 	typedef ArrayMap<TextureResId, TextureID> TextureMap;
 
-	void loadTexture(const TextureResId& name);
+	void loadTexture(const TextureResId& name, uint flags = 0);
 	
 	template <typename MatType>
 	bool loadMaterial(const MaterialLibResId& matLibId);

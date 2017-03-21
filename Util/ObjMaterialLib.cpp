@@ -80,7 +80,7 @@ bool ObjMaterialLib::loadMaterial(const MaterialLibResId& matLibId)
 	{
 		std::for_each(_materialMap.values().begin(), _materialMap.values().end(), [this](const Material& mat)
 		{
-			loadTexture(mat.albedoMap);
+			loadTexture(mat.albedoMap, SRGB);
 			loadTexture(mat.metallicMap);
 			loadTexture(mat.normalMap);
 			loadTexture(mat.roughnessMap);
@@ -155,11 +155,11 @@ TextureID ObjMaterialLib::getTexture(const TextureResId& name, TextureID default
 	return defaultTexture;
 }
 
-void ObjMaterialLib::loadTexture(const TextureResId& name)
+void ObjMaterialLib::loadTexture(const TextureResId& name, uint flags)
 {
 	if (name.isValid())
 	{
-		Optional<TextureID> texture = _resourceLoader.SyncLoad(name);
+		Optional<TextureID> texture = _resourceLoader.SyncLoad(name, flags);
 		if (texture)
 		{
 			_loadedTextures.add(name, texture.getVal());

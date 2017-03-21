@@ -32,7 +32,7 @@ float3 ComputeSpecularBRDF(float3 specular, float roughness, float3 normal, floa
     float3 h = normalize(v + l);
     float k = roughness / 2.0f;
     
-    float3 fresnel = specular + (1.0f - specular) * (1.0f - pow(ClampDot(v, h), 5.0f));
+    float3 fresnel = specular + (1.0f - specular) * pow(1.0f - ClampDot(v, h), 5.0f);
     float3 geometry = rcp(4 * (ClampDot(normal, v) * (1 - k) + k) * (ClampDot(normal, l) * (1 - k) + k));
     
     float rSqr = sqr(roughness);

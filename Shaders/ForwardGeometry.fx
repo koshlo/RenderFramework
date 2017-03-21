@@ -54,11 +54,12 @@ float4 ScreenToWorld(float2 screenCoords, float depth)
 MaterialInfo GetMaterialInfo(float2 uv)
 {
     MaterialInfo outMat;
-    outMat.albedo = AlbedoMap.Sample(MaterialSampler, uv);
     outMat.rougness = RoughnessMap.Sample(MaterialSampler, uv);
     
     float metallic = MetallicMap.Sample(MaterialSampler, uv);
-    outMat.specular = lerp(0.03f, outMat.albedo, metallic);
+    float3 albedo = AlbedoMap.Sample(MaterialSampler, uv);
+    outMat.albedo = albedo * (1.0f - metallic);
+    outMat.specular = lerp(0.03f, albedo, metallic);
     return outMat;
 }
 

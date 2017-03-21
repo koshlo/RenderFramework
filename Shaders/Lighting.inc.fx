@@ -18,5 +18,5 @@ float3 ComputeDirectLight(const in MaterialInfo material, const in SurfaceInfo s
 {
     float3 diffuse = ComputeDiffuseBRDF(material.albedo);
     float3 specular = ComputeSpecularBRDF(material.specular, material.rougness, surfaceInfo.normal, surfaceInfo.viewDir, surfaceInfo.lightDir);
-    return (diffuse + specular) * intensity;
+    return intensity * (diffuse * (1.0f - specular) + specular) * ClampDot(surfaceInfo.normal, surfaceInfo.lightDir);
 }

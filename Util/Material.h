@@ -8,6 +8,7 @@
 struct TextureResTrait
 {
 	typedef TextureID ReturnType;
+    typedef uint UserData; // flags
 };
 
 typedef ResourceId<TextureResTrait> TextureResId;

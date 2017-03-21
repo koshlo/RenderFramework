@@ -21,12 +21,11 @@
 
 #include "Label.h"
 
-Label::Label(const float x, const float y, const float w, const float h, const char *txt){
+Label::Label(const float x, const float y, const float w, const float h, const char *txt) :
+    text(txt)
+{
 	setPosition(x, y);
 	setSize(w, h);
-
-	text = new char[strlen(txt) + 1];
-	strcpy(text, txt);
 
 	enabled = false;
 }

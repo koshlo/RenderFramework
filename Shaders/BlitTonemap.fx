@@ -18,7 +18,7 @@ float3 BurgessDawson(float3 color)
 
 float4 main(PsIn psIn) : SV_Target
 {
-    const float Exposure = 0.05;
+    const float Exposure = 0.1;
     float4 sourceColor = SourceTexture.Sample(SourceSampler, psIn.texCoord);
     float3 tonemapped = BurgessDawson(sourceColor.rgb * Exposure);
     return float4(tonemapped, 1.0);

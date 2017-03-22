@@ -158,7 +158,7 @@ void RenderQueue::DispatchCompute(StateHelper* stateHelper, const DispatchGroup&
 	device->dispatchCompute(group.x, group.y, group.z);
 }
 
-void RenderQueue::Blit(StateHelper* stateHelper, RenderStateCache* stateCache, ShaderID shader, TextureID source, TextureID target)
+void RenderQueue::Blit(StateHelper* stateHelper, ShaderID shader, const ShaderData** shaderData, uint shaderDataCount, TextureID source, SamplerStateID sourceSampler, TextureID target )
 {
     GraphicsDevice* gfxDevice = stateHelper->GetDevice();
     gfxDevice->changeRenderTarget(target, TEXTURE_NONE);
@@ -168,9 +168,13 @@ void RenderQueue::Blit(StateHelper* stateHelper, RenderStateCache* stateCache, S
 
     BlitShaderData blitShaderData;
     blitShaderData.SetSourceTexture(source);
-    SamplerStateID pointSampler = stateCache->GetSamplerState(SamplerStateDesc{ NEAREST, CLAMP, CLAMP, CLAMP });
-    blitShaderData.SetSourceSampler(pointSampler);
+    blitShaderData.SetSourceSampler(sourceSampler);
     blitShaderData.Apply(stateHelper);
+
+    for (uint i = 0; i < shaderDataCount; ++i)
+    {
+        shaderData[i]->Apply(stateHelper);
+    }
 
     gfxDevice->apply();
     gfxDevice->drawArrays(PRIM_TRIANGLE_STRIP, 0, 4);

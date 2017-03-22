@@ -31,6 +31,8 @@ public:
 	virtual ~Label();
 
     void setText(const String& txt) { text = txt; }
+    void setText(const char* txt) { text = txt; }
+
 	void draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState);
 
 protected:

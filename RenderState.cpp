@@ -22,7 +22,7 @@ uint64 DescToKey(const RenderStateDesc& desc)
 	return UnionCast<uint64>(desc);
 }
 
-const RenderStateRef RenderStateCache::GetRenderState(const RenderStateDesc& stateDesc)
+RenderState RenderStateCache::GetRenderState(const RenderStateDesc& stateDesc)
 {
 	uint64 key = DescToKey(stateDesc);
 	std::pair<RenderStateMap::iterator, bool> keyInserted = _renderStates.emplace(key, RenderState());

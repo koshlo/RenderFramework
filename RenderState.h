@@ -35,7 +35,7 @@ class RenderStateCache
 {
 public:
 	RenderStateCache(GraphicsDevice* gfxDevice) : _device(gfxDevice) {}
-	const RenderStateRef GetRenderState(const RenderStateDesc& stateDesc);
+	RenderState GetRenderState(const RenderStateDesc& stateDesc);
     SamplerStateID GetSamplerState(const SamplerStateDesc& samplerDesc);
 private:
 	typedef std::unordered_map<uint64, RenderState> RenderStateMap;

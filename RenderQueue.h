@@ -12,7 +12,7 @@ typedef const RenderState* RenderStatePtr;
 struct DrawCallState
 {
 	RenderStatePtr renderState;
-	ShaderData* shaderData;
+	const ShaderData* shaderData;
 };
 
 struct DispatchGroup
@@ -28,9 +28,9 @@ public:
 	typedef uint32_t SortKeyType;
 
 	RenderQueue(GraphicsDevice* gfxDevice, uint rtWidth, uint rtHeight, uint rtCount, FORMAT rtFormat, FORMAT depthFormat);
-    RenderQueue(GraphicsDevice* gfxDevice, const TextureID* renderTargets, uint rtCount, TextureID depthRT);
+    RenderQueue(GraphicsDevice* gfxDevice, const TextureID* renderTargets, uint rtCount, TextureID depthRT, int rtFace = -1);
 	void SetClear(bool clearRT, bool clearDepth, float4 clearColor, float depthClearVal);
-	void AddShaderData(ShaderData* shaderData);
+	void AddShaderData(const ShaderData* shaderData);
 
 	template<typename T>
 	T& AddRenderCommand(const SortKeyType& sortKey, const DrawCallState& drawState)
@@ -76,10 +76,11 @@ private:
 	SortKeyType _sortingKeys[MaxCommands];
 	uint _currentCommand;
 
-	ShaderData* _shaderData[MaxShaderDataPerQueue];
+	const ShaderData* _shaderData[MaxShaderDataPerQueue];
 	uint _numShaderData;
 	TextureID _renderTargets[MaxRenderTargets];
 	uint _numRenderTargets;
+    int _rtFace;
 	TextureID _depthRT;
 
 	bool _clearRT;

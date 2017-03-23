@@ -5,6 +5,9 @@
 #include "AABB.h"
 #include "../StateHelper.h"
 #include "../RenderState.h"
+#include "../Shaders/Lighting.data.fx"
+#include "../Shaders/Shadow.data.fx"
+#include "../Shaders/ExpWarping.data.fx"
 
 class RenderResourceLoader;
 class ShaderData;
@@ -31,4 +34,14 @@ private:
 	ShaderID _geometryShader;
 
 	void PrepareDrawData(GraphicsDevice& gfxDevice);
+};
+
+struct Scene
+{
+    const SceneObject* objects;
+    uint numObjects;
+
+    const LightShaderData* lightShaderData;
+    const ShadowShaderData* shadowShaderData;
+    const ExpWarpingShaderData* expWarpingData;
 };

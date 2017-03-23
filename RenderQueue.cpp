@@ -60,7 +60,8 @@ RenderQueue::RenderQueue(GraphicsDevice* gfxDevice, uint rtWidth, uint rtHeight,
 	_clearColor(0),
 	_depthClearVal(0),
     _numShaderData(0),
-    _numRenderTargets(rtCount)
+    _numRenderTargets(rtCount),
+    _rtFace(-1)
 {
 	_buffer.resize(BufferSize);
 	_commands[_currentCommand] = _buffer.data();
@@ -77,11 +78,11 @@ RenderQueue::RenderQueue(GraphicsDevice* gfxDevice, uint rtWidth, uint rtHeight,
 	}
 }
 
-RenderQueue::RenderQueue(GraphicsDevice* gfxDevice, const TextureID* renderTargets, uint rtCount, TextureID depthRT) :
+RenderQueue::RenderQueue(GraphicsDevice* gfxDevice, const TextureID* renderTargets, uint rtCount, TextureID depthRT, int rtFace) :
     RenderQueue(gfxDevice, 0, 0, 0, FORMAT_NONE, FORMAT_NONE)
 {
     ASSERT(rtCount < MaxRenderTargets);
-
+    _rtFace = rtFace;
     _numRenderTargets = rtCount;
     for (uint i = 0; i < _numRenderTargets; ++i)
     {
@@ -98,7 +99,7 @@ void RenderQueue::SetClear(bool clearRT, bool clearDepth, float4 clearColor, flo
 	_depthClearVal = depthClearVal;
 }
 
-void RenderQueue::AddShaderData(ShaderData* shaderData)
+void RenderQueue::AddShaderData(const ShaderData* shaderData)
 {
 	_shaderData[_numShaderData++] = shaderData;
 	ASSERT(_numShaderData < MaxShaderDataPerQueue);
@@ -120,7 +121,14 @@ void RenderQueue::Sort()
 void RenderQueue::SubmitAll(GraphicsDevice* gfxDevice, StateHelper* stateHelper)
 {
 	gfxDevice->reset();
-	gfxDevice->changeRenderTargets(_renderTargets, _numRenderTargets, _depthRT);
+    const int* faces = nullptr;
+    int rtFaces[] = { _rtFace };
+    if (_rtFace != -1)
+    {
+        ASSERT(_numRenderTargets == 1); // no support for MRT in this case
+        faces = rtFaces;
+    }
+	gfxDevice->changeRenderTargets(_renderTargets, _numRenderTargets, _depthRT, faces);
 	gfxDevice->clear(_clearRT, _clearDepth, _clearColor, _depthClearVal);
 	for (uint i = 1; i <= _currentCommand; ++i)
 	{

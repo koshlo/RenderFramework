@@ -2297,6 +2297,36 @@ void Direct3D11Renderer::setReadWriteBuffer(const char* bufferName, const Struct
 	}
 }
 
+template <class ViewType>
+struct ViewTrait
+{
+    typedef int DescType;
+};
+
+template <>
+struct ViewTrait<ID3D11RenderTargetView>
+{
+    typedef D3D11_RENDER_TARGET_VIEW_DESC DescType;
+    typedef D3D11_RTV_DIMENSION DimensionType;
+    
+    static const DimensionType Array2D = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+    static const DimensionType Texture2D = D3D11_RTV_DIMENSION_TEXTURE2D;
+    static const DimensionType Texture2DMS = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+    static const DimensionType Texture3D = D3D11_RTV_DIMENSION_TEXTURE3D;
+};
+
+template <>
+struct ViewTrait<ID3D11UnorderedAccessView>
+{
+    typedef D3D11_UNORDERED_ACCESS_VIEW_DESC DescType;
+    typedef D3D11_UAV_DIMENSION DimensionType;
+
+    static const DimensionType Array2D = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
+    static const DimensionType Texture2D = D3D11_UAV_DIMENSION_TEXTURE2D;
+    static const DimensionType Texture2DMS = D3D11_UAV_DIMENSION_TEXTURE2D;
+    static const DimensionType Texture3D = D3D11_UAV_DIMENSION_TEXTURE3D;
+};
+
 template <class Resource, class ViewType>
 struct ResourceView
 {
@@ -2305,6 +2335,12 @@ struct ResourceView
 		static_assert(false, "Not implemented!");
 	}
 };
+
+template <class ViewType>
+HRESULT CreateView(ID3D11Device* device, ID3D11Resource* res, const typename ViewTrait<ViewType>::DescType& desc, ViewType** view)
+{
+    static_assert(false, "Not implemented");
+}
 
 template <class Resource>
 struct ResourceView<Resource, ID3D11ShaderResourceView>
@@ -2315,7 +2351,6 @@ struct ResourceView<Resource, ID3D11ShaderResourceView>
 	}
 };
 
-
 template <class Resource>
 struct ResourceView<Resource, ID3D11UnorderedAccessView>
 {
@@ -2324,6 +2359,18 @@ struct ResourceView<Resource, ID3D11UnorderedAccessView>
 		return res.uav;
 	}
 };
+
+template <>
+HRESULT CreateView<ID3D11UnorderedAccessView>(ID3D11Device* device, ID3D11Resource* res, const D3D11_UNORDERED_ACCESS_VIEW_DESC& desc, ID3D11UnorderedAccessView** view)
+{
+    return device->CreateUnorderedAccessView(res, &desc, view);
+}
+
+template <>
+HRESULT CreateView<ID3D11RenderTargetView>(ID3D11Device* device, ID3D11Resource* res, const D3D11_RENDER_TARGET_VIEW_DESC& desc, ID3D11RenderTargetView** view)
+{
+    return device->CreateRenderTargetView(res, &desc, view);
+}
 
 template <class Resource, class ViewType>
 bool fillViews(ViewType **dest, int &min, int &max, const int selectedResourceIds[], int currentResourceIds[], const Resource *resources, const uint maxNum)
@@ -3217,78 +3264,89 @@ ID3D11ShaderResourceView *Direct3D11Renderer::createSRV(ID3D11Resource *resource
 	return srv;
 }
 
+template <class ViewType>
+ViewType* createView(ID3D11Device* device, ID3D11Resource *resource, DXGI_FORMAT format, const int firstSlice, const int sliceCount)
+{
+    D3D11_RESOURCE_DIMENSION type;
+    resource->GetType(&type);
+
+    typename ViewTrait<ViewType>::DescType viewDesc;
+    ViewType *view;
+
+    switch (type)
+    {
+    case D3D11_RESOURCE_DIMENSION_TEXTURE2D:
+        D3D11_TEXTURE2D_DESC desc2d;
+        ((ID3D11Texture2D *)resource)->GetDesc(&desc2d);
+
+        viewDesc.Format = (format != DXGI_FORMAT_UNKNOWN) ? format : desc2d.Format;
+        if (desc2d.ArraySize > 1)
+        {
+            viewDesc.ViewDimension = ViewTrait<ViewType>::Array2D;
+            if (firstSlice < 0)
+            {
+                viewDesc.Texture2DArray.FirstArraySlice = 0;
+                viewDesc.Texture2DArray.ArraySize = desc2d.ArraySize;
+            }
+            else
+            {
+                viewDesc.Texture2DArray.FirstArraySlice = firstSlice;
+                if (sliceCount < 0)
+                    viewDesc.Texture2DArray.ArraySize = 1;
+                else
+                    viewDesc.Texture2DArray.ArraySize = sliceCount;
+            }
+            viewDesc.Texture2DArray.MipSlice = 0;
+        }
+        else
+        {
+            viewDesc.ViewDimension = (desc2d.SampleDesc.Count > 1) ? ViewTrait<ViewType>::Texture2DMS : ViewTrait<ViewType>::Texture2D;
+            viewDesc.Texture2D.MipSlice = 0;
+        }
+        break;
+    case D3D11_RESOURCE_DIMENSION_TEXTURE3D:
+        D3D11_TEXTURE3D_DESC desc3d;
+        ((ID3D11Texture3D *)resource)->GetDesc(&desc3d);
+
+        viewDesc.Format = (format != DXGI_FORMAT_UNKNOWN) ? format : desc3d.Format;
+        viewDesc.ViewDimension = ViewTrait<ViewType>::Texture3D;
+        if (firstSlice < 0)
+        {
+            viewDesc.Texture3D.FirstWSlice = 0;
+            viewDesc.Texture3D.WSize = desc3d.Depth;
+        }
+        else
+        {
+            viewDesc.Texture3D.FirstWSlice = firstSlice;
+            if (sliceCount < 0)
+                viewDesc.Texture3D.WSize = 1;
+            else
+                viewDesc.Texture3D.WSize = sliceCount;
+        }
+        viewDesc.Texture3D.MipSlice = 0;
+        break;
+    default:
+        ErrorMsg("Unsupported type");
+        return NULL;
+    }
+
+    if (FAILED(CreateView(device, resource, viewDesc, &view)))
+    {
+        ErrorMsg("CreateRenderTargetView failed");
+        return NULL;
+    }
+
+    return view;
+}
+
 ID3D11RenderTargetView *Direct3D11Renderer::createRTV(ID3D11Resource *resource, DXGI_FORMAT format, const int firstSlice, const int sliceCount)
 {
-	D3D11_RESOURCE_DIMENSION type;
-	resource->GetType(&type);
+    return createView<ID3D11RenderTargetView>(device, resource, format, firstSlice, sliceCount);
+}
 
-	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-	ID3D11RenderTargetView *rtv;
-
-	switch (type)
-	{
-		case D3D11_RESOURCE_DIMENSION_TEXTURE2D:
-			D3D11_TEXTURE2D_DESC desc2d;
-			((ID3D11Texture2D *) resource)->GetDesc(&desc2d);
-
-			rtvDesc.Format = (format != DXGI_FORMAT_UNKNOWN)? format : desc2d.Format;
-			if (desc2d.ArraySize > 1)
-			{
-				rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-				if (firstSlice < 0)
-				{
-					rtvDesc.Texture2DArray.FirstArraySlice = 0;
-					rtvDesc.Texture2DArray.ArraySize = desc2d.ArraySize;
-				}
-				else
-				{
-					rtvDesc.Texture2DArray.FirstArraySlice = firstSlice;
-					if (sliceCount < 0)
-						rtvDesc.Texture2DArray.ArraySize = 1;
-					else
-						rtvDesc.Texture2DArray.ArraySize = sliceCount;
-				}
-				rtvDesc.Texture2DArray.MipSlice = 0;
-			}
-			else
-			{
-				rtvDesc.ViewDimension = (desc2d.SampleDesc.Count > 1)? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D;
-				rtvDesc.Texture2D.MipSlice = 0;
-			}
-			break;
-		case D3D11_RESOURCE_DIMENSION_TEXTURE3D:
-			D3D11_TEXTURE3D_DESC desc3d;
-			((ID3D11Texture3D *) resource)->GetDesc(&desc3d);
-
-			rtvDesc.Format = (format != DXGI_FORMAT_UNKNOWN)? format : desc3d.Format;
-			rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE3D;
-			if (firstSlice < 0)
-			{
-				rtvDesc.Texture3D.FirstWSlice = 0;
-				rtvDesc.Texture3D.WSize = desc3d.Depth;
-			}
-			else
-			{
-				rtvDesc.Texture3D.FirstWSlice = firstSlice;
-				if (sliceCount < 0)
-					rtvDesc.Texture3D.WSize = 1;
-				else
-					rtvDesc.Texture3D.WSize = sliceCount;
-			}
-			rtvDesc.Texture3D.MipSlice = 0;
-			break;
-		default:
-			ErrorMsg("Unsupported type");
-			return NULL;
-	}
-
-	if (FAILED(device->CreateRenderTargetView(resource, &rtvDesc, &rtv)))
-	{
-		ErrorMsg("CreateRenderTargetView failed");
-		return NULL;
-	}
-
-	return rtv;
+ID3D11UnorderedAccessView* Direct3D11Renderer::createUAV(ID3D11Resource* resource, DXGI_FORMAT format, const int firstSlice, const int sliceCount)
+{
+    return createView<ID3D11UnorderedAccessView>(device, resource, format, firstSlice, sliceCount);
 }
 
 ID3D11DepthStencilView *Direct3D11Renderer::createDSV(ID3D11Resource *resource, DXGI_FORMAT format, const int firstSlice, const int sliceCount)

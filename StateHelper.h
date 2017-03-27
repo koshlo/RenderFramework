@@ -25,7 +25,7 @@ public:
 	
 	void SetShaderTexture(const char* name, TextureID texture);
 	void SetSamplerState(const char* name, SamplerStateID samplerState);
-	void SetUnorderedAccessTexture(const char* name, TextureID texture);
+	void SetUnorderedAccessTexture(const char* name, TextureID texture, int slice = SS_NONE);
 	void SetStructBuffer(const char* name, StructuredBufferID buffer);
 	void SetUAVBuffer(const char* name, StructuredBufferID buffer);
 

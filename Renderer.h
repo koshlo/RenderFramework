@@ -202,7 +202,7 @@ public:
 	virtual void setTexture(const char *textureName, const TextureID texture, const SamplerStateID samplerState) = 0;
 	virtual void setTextureSlice(const char *textureName, const TextureID texture, const int slice) = 0;
 
-    virtual void setUnorderedAccessTexture(const char *textureName, const TextureID texture) = 0;
+    virtual void setUnorderedAccessTexture(const char *textureName, const TextureID texture, const int slice = SS_NONE) = 0;
 
 	virtual void setStructBuffer(const char* bufferName, const StructuredBufferID buffer) = 0;
 	virtual void setReadWriteBuffer(const char* bufferName, const StructuredBufferID buffer) = 0;

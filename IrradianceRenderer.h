@@ -33,6 +33,9 @@ private:
     TextureArray _environmentMaps;
     TextureArray _irradianceMaps;
 
+    ShaderID _computeIrradiance;
+    SamplerStateID _envMapSampler;
+
     ShaderID _debugSphereShader;
     RenderState _debugSphereState;
     ProbeDataArray _probeShaderData;

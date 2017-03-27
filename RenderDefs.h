@@ -113,14 +113,15 @@ enum AddressMode {
 #define DONTCARE (-2)
 
 // Texture flags
-#define CUBEMAP       0x1
-#define HALF_FLOAT    0x2
-#define SRGB          0x4
-#define SAMPLE_DEPTH  0x8
-#define SAMPLE_SLICES 0x10
-#define RENDER_SLICES 0x20
-#define USE_MIPGEN    0x40
-#define ADD_UAV       0x80
+#define CUBEMAP             0x1
+#define HALF_FLOAT          0x2
+#define SRGB                0x4
+#define SAMPLE_DEPTH        0x8
+#define SAMPLE_SLICES       0x10
+#define RENDER_SLICES       0x20
+#define USE_MIPGEN          0x40
+#define ADD_UAV             0x80
+#define READWRITE_SLICES    0x100
 
 // Shader flags
 #define ASSEMBLY 0x1

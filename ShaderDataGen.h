@@ -41,6 +41,8 @@ private:
 #define TEXTURE_3D(Name, Type) Texture3D<Type> Name
 #define SAMPLER_STATE(Name) SamplerState Name
 #define UAV_TEXTURE_2D(Name, Type) RWTexture2D<Type> Name
+#define UAV_TEXTURE_2D_SLICE(Name, Type) UAV_TEXTURE_2D(Name, Type)
+#define UAV_TEXTURE_2D_ARRAY(Name, Type) RWTexture2DArray<Type> Name
 #define BUFFER(Name, Type) StructuredBuffer<Type> Name
 #define UAV_BUFFER(Name, Type) RWStructuredBuffer<Type> Name
 

@@ -7,6 +7,8 @@
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
+#undef UAV_TEXTURE_2D_SLICE
+#undef UAV_TEXTURE_2D_ARRAY
 #undef BUFFER
 #undef UAV_BUFFER
 
@@ -17,6 +19,8 @@
 #define TEXTURE_3D(Name, Type) TextureID _##Name;
 #define SAMPLER_STATE(Name) SamplerStateID _##Name;
 #define UAV_TEXTURE_2D(Name, Type) TextureID _##Name;
+#define UAV_TEXTURE_2D_SLICE(Name, Type) TextureID _##Name; int _##Name##Slice;
+#define UAV_TEXTURE_2D_ARRAY(Name, Type) TextureID _##Name;
 #define BUFFER(Name, Type) StructuredBufferID _##Name;
 #define UAV_BUFFER(Name, Type) StructuredBufferID _##Name;
 
@@ -29,6 +33,8 @@
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
+#undef UAV_TEXTURE_2D_SLICE
+#undef UAV_TEXTURE_2D_ARRAY
 #undef BUFFER
 #undef UAV_BUFFER
 
@@ -50,8 +56,13 @@
 #define TEXTURE_3D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
 #define SAMPLER_STATE(Name) ACCESSOR_HELPER(Name, SamplerStateID)
 #define UAV_TEXTURE_2D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
+#define UAV_TEXTURE_2D_ARRAY(Name, Type) ACCESSOR_HELPER(Name, TextureID)
 #define BUFFER(Name, Type) ACCESSOR_HELPER(Name, StructuredBufferID)
 #define UAV_BUFFER(Name, Type) ACCESSOR_HELPER(Name, StructuredBufferID)
+
+#define UAV_TEXTURE_2D_SLICE(Name, Type)	const TextureID Get##Name() const { return _##Name; } \
+											void Set##Name(TextureID val, int slice) { _##Name = val; _##Name##Slice = slice; }
+
 
 #elif GENERATION_PASS == GENERATE_APPLY
 
@@ -62,6 +73,8 @@
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
+#undef UAV_TEXTURE_2D_SLICE
+#undef UAV_TEXTURE_2D_ARRAY
 #undef BUFFER
 #undef UAV_BUFFER
 
@@ -75,6 +88,8 @@
 #define TEXTURE_3D(Name, Type) stateHelper->SetShaderTexture(STR(Name), _##Name);
 #define SAMPLER_STATE(Name) stateHelper->SetSamplerState(STR(Name), _##Name);
 #define UAV_TEXTURE_2D(Name, Type) stateHelper->SetUnorderedAccessTexture(STR(Name), _##Name);
+#define UAV_TEXTURE_2D_SLICE(Name, Type) stateHelper->SetUnorderedAccessTexture(STR(Name), _##Name, _##Name##Slice);
+#define UAV_TEXTURE_2D_ARRAY(Name, Type) UAV_TEXTURE_2D(Name, Type);
 #define BUFFER(Name, Type) stateHelper->SetStructBuffer(STR(Name), _##Name);
 #define UAV_BUFFER(Name, Type) stateHelper->SetUAVBuffer(STR(Name), _##Name);
 

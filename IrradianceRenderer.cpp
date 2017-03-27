@@ -3,7 +3,9 @@
 #include "Renderer.h"
 #include "RenderQueue.h"
 #include "Util/SceneObject.h"
+#include "Util/Helpers.h"
 #include "Shaders/View.data.fx"
+#include "Shaders/ConvolveEnvMap.data.fx"
 
 IrradianceRenderer::IrradianceRenderer(GraphicsDevice* gfxDevice, RenderStateCache* stateCache, StateHelper* stateHelper)
     : _gfxDevice(gfxDevice)
@@ -11,6 +13,8 @@ IrradianceRenderer::IrradianceRenderer(GraphicsDevice* gfxDevice, RenderStateCac
     , _debugSphereShader(SHADER_NONE)
     , _stateHelper(stateHelper)
 {
+    _computeIrradiance = _gfxDevice->addComputeShader("../RenderFramework/Shaders/ConvolveEnvMap.fx");
+    _envMapSampler = _stateCache->GetSamplerState(SamplerStateDesc{ LINEAR, CLAMP, CLAMP, CLAMP });
 }
 
 TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount, uint probeResolution, const Scene& scene)
@@ -50,6 +54,22 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
             }
 
             renderQueue.SubmitAll(_gfxDevice, _stateHelper);
+        }
+
+        TextureID& irradianceMap = _irradianceMaps[i];
+        uint irrRes = probeResolution / 2;
+        irradianceMap = _gfxDevice->addRenderTarget(irrRes, irrRes, FORMAT_RGBA16F, SS_NONE, CUBEMAP | ADD_UAV);
+
+        ConvolveEnvMapShaderData irradianceShaderData;
+        irradianceShaderData.SetEnvironmentMap(environmentMap);
+        irradianceShaderData.SetEnvMapSampler(_envMapSampler);
+        for (uint face = 0; face < 6; ++face)
+        {
+            irradianceShaderData.SetIrradianceCubeMapUAV(irradianceMap);
+            irradianceShaderData.SetFace(face);
+            DispatchGroup group{ irrRes / NUM_THREADS, irrRes / NUM_THREADS, 1 };
+            const ShaderData* shaderData[] = { &irradianceShaderData };
+            RenderQueue::DispatchCompute(_stateHelper, group, _computeIrradiance, shaderData, array_size(shaderData));
         }
     }
 
@@ -96,7 +116,7 @@ void IrradianceRenderer::GenerateDebugData(vec3* probePositions, uint probeCount
         ProbeDebugShaderData& currentData = _probeShaderData[i];
         static const float scale = 20.0f;
         currentData.SetTranslationScale(float4(probePositions[i], scale));
-        currentData.SetCubeMap(_environmentMaps[i]);
+        currentData.SetCubeMap(_irradianceMaps[i]);
         currentData.SetCubeMapSampler(_sphereSampler);
     }
 }

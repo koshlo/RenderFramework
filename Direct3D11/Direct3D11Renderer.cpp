@@ -36,6 +36,7 @@ struct Texture
     ID3D11UnorderedAccessView   *uav;
 	ID3D11ShaderResourceView **srvArray;
 	ID3D11RenderTargetView   **rtvArray;
+    ID3D11UnorderedAccessView **uavArray;
 	ID3D11DepthStencilView   **dsvArray;
 	DXGI_FORMAT texFormat;
 	DXGI_FORMAT srvFormat;
@@ -521,6 +522,7 @@ void Direct3D11Renderer::reset(const uint flags)
 		for (uint i = 0; i < MAX_UAV; i++)
 		{
 			selectedRwTexturesCS[i] = TEXTURE_NONE;
+            selectedRwSlices[i] = NO_SLICE;
             selectedRwBuffers[i] = BUFFER_NONE;
 		}
 	}
@@ -766,7 +768,7 @@ TextureID Direct3D11Renderer::addRenderTarget(const int width, const int height,
     }
 
     UINT additionalBindFlags = 0;
-    if (flags & ADD_UAV)
+    if ( (flags & ADD_UAV) || (flags & READWRITE_SLICES) )
     {
         additionalBindFlags |= D3D11_BIND_UNORDERED_ACCESS;
     }
@@ -852,6 +854,16 @@ TextureID Direct3D11Renderer::addRenderTarget(const int width, const int height,
 			tex.rtvArray[i] = createRTV(tex.texture, tex.rtvFormat, i);
 		}
 	}
+
+    if (flags & READWRITE_SLICES)
+    {
+        tex.uavArray = new ID3D11UnorderedAccessView *[sliceCount];
+
+        for (int i = 0; i < sliceCount; i++)
+        {
+            tex.uavArray[i] = createUAV(tex.texture, DXGI_FORMAT_UNKNOWN, i);
+        }
+    }
 
 	return textures.add(tex);
 }
@@ -1105,6 +1117,15 @@ void Direct3D11Renderer::removeTexture(const TextureID texture)
 		delete [] textures[texture].dsvArray;
 		textures[texture].dsvArray = NULL;
 	}
+    if (textures[texture].uavArray)
+    {
+        for (int i = 0; i < sliceCount; i++)
+        {
+            textures[texture].uavArray[i]->Release();
+        }
+        delete[] textures[texture].uavArray;
+        textures[texture].uavArray = NULL;
+    }
 }
 
 ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, const char *fsText, const int vsLine, const int gsLine, const int fsLine,
@@ -2230,7 +2251,7 @@ void Direct3D11Renderer::setTextureSlice(const char *textureName, const TextureI
 	}
 }
 
-void Direct3D11Renderer::setUnorderedAccessTexture( const char *textureName, const TextureID texture )
+void Direct3D11Renderer::setUnorderedAccessTexture( const char *textureName, const TextureID texture, int slice )
 {
     ASSERT(selectedShader != SHADER_NONE);
     const ShaderResource *s = getShaderResource(shaders[selectedShader].rwTextures, shaders[selectedShader].nRwTextures, textureName);
@@ -2239,6 +2260,7 @@ void Direct3D11Renderer::setUnorderedAccessTexture( const char *textureName, con
         if (s->varIndex[Shader_CS] >= 0)
         {
             selectedRwTexturesCS[s->varIndex[Shader_CS]] = texture;
+            selectedRwSlices[s->varIndex[Shader_CS]] = slice;
         }
     }
     else
@@ -2334,6 +2356,11 @@ struct ResourceView
 	{
 		static_assert(false, "Not implemented!");
 	}
+
+    static ViewType* Get(const Resource& res, uint index)
+    {
+        static_assert(false, "Not implemented!");
+    }
 };
 
 template <class ViewType>
@@ -2349,6 +2376,11 @@ struct ResourceView<Resource, ID3D11ShaderResourceView>
 	{
 		return res.srv;
 	}
+
+    static ID3D11ShaderResourceView* Get(const Resource& res, uint index)
+    {
+        return res.srvArray[index];
+    }
 };
 
 template <class Resource>
@@ -2358,6 +2390,11 @@ struct ResourceView<Resource, ID3D11UnorderedAccessView>
 	{
 		return res.uav;
 	}
+
+    static ID3D11UnorderedAccessView* Get(const Resource& res, uint index)
+    {
+        return res.uavArray[index];
+    }
 };
 
 template <>
@@ -2406,14 +2443,15 @@ bool fillViews(ViewType **dest, int &min, int &max, const int selectedResourceId
 	return false;
 }
 
-bool fillSRV(ID3D11ShaderResourceView **dest, int &min, int &max, const TextureID selectedTextures[], TextureID currentTextures[], const TextureID selectedTextureSlices[], TextureID currentTextureSlices[], const Texture *textures)
+template <class Resource, class ViewType>
+bool fillViews(ViewType **dest, int &min, int &max, const TextureID selectedTextures[], TextureID currentTextures[], const TextureID selectedTextureSlices[], TextureID currentTextureSlices[], const Resource *textures, const int maxNum)
 {
 	min = 0;
 	do
 	{
 		if (selectedTextures[min] != currentTextures[min] || selectedTextureSlices[min] != currentTextureSlices[min])
 		{
-			max = MAX_TEXTUREUNIT;
+			max = maxNum;
 			do
 			{
 				max--;
@@ -2425,11 +2463,11 @@ bool fillSRV(ID3D11ShaderResourceView **dest, int &min, int &max, const TextureI
 				{
 					if (selectedTextureSlices[i] == NO_SLICE)
 					{
-						*dest++ = textures[selectedTextures[i]].srv;
+						*dest++ = ResourceView<Resource, ViewType>::Get(textures[selectedTextures[i]]);
 					}
 					else
 					{
-						*dest++ = textures[selectedTextures[i]].srvArray[selectedTextureSlices[i]];
+						*dest++ = ResourceView<Resource, ViewType>::Get(textures[selectedTextures[i]], selectedTextureSlices[i]);
 					}
 				}
 				else
@@ -2442,7 +2480,7 @@ bool fillSRV(ID3D11ShaderResourceView **dest, int &min, int &max, const TextureI
 			return true;
 		}
 		min++;
-	} while (min < MAX_TEXTUREUNIT);
+	} while (min < maxNum);
 
 	return false;
 }
@@ -2454,12 +2492,12 @@ void Direct3D11Renderer::applyTextures()
 	int min, max;
 
     ID3D11UnorderedAccessView *uaViews[MAX_UAV];
-    if (fillViews(uaViews, min, max, selectedRwTexturesCS, currentRwTexturesCS, textures.getArray(), MAX_UAV))
+    if (fillViews(uaViews, min, max, selectedRwTexturesCS, currentRwTexturesCS, selectedRwSlices, currentRwSlices, textures.getArray(), MAX_UAV))
         context->CSSetUnorderedAccessViews(min, max - min + 1, uaViews, NULL);
 
 	for (uint i = 0; i < Shader_Count; ++i)
 	{
-		if (fillSRV(srViews, min, max, selectedTextures[i], currentTextures[i], selectedTextureSlices[i], currentTextureSlices[i], textures.getArray()))
+		if (fillViews(srViews, min, max, selectedTextures[i], currentTextures[i], selectedTextureSlices[i], currentTextureSlices[i], textures.getArray(), MAX_TEXTUREUNIT))
 			setShaderResourceViews(static_cast<ShaderType>(i), min, max - min + 1, context, srViews);
 	}
 
@@ -3407,14 +3445,7 @@ ID3D11DepthStencilView *Direct3D11Renderer::createDSV(ID3D11Resource *resource, 
 
 ID3D11UnorderedAccessView* Direct3D11Renderer::createDefaultUAV( ID3D11Resource *resource )
 {
-    ID3D11UnorderedAccessView* uav;
-    HRESULT hr = device->CreateUnorderedAccessView(resource, NULL, &uav);
-    if (FAILED(hr))
-    {
-        ErrorMsg("CreateUAV failed");
-        return NULL;
-    }
-    return uav;
+    return createUAV(resource, DXGI_FORMAT_UNKNOWN, -1, -1);
 }
 
 ubyte *Direct3D11Renderer::mapRollingVB(const uint size)

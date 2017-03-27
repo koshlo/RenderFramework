@@ -84,7 +84,7 @@ public:
 	void setTexture(const char *textureName, const TextureID texture);
 	void setTexture(const char *textureName, const TextureID texture, const SamplerStateID samplerState);
 	void setTextureSlice(const char *textureName, const TextureID texture, const int slice);
-    void setUnorderedAccessTexture(const char *textureName, const TextureID texture);
+    void setUnorderedAccessTexture(const char *textureName, const TextureID texture, const int slice = NO_SLICE);
 	void setStructBuffer(const char* bufferName, const StructuredBufferID buffer);
 	void setReadWriteBuffer(const char* bufferName, const StructuredBufferID buffer);
 
@@ -154,6 +154,7 @@ protected:
 	int currentTextureSlices[Shader_Count][MAX_TEXTUREUNIT], selectedTextureSlices[Shader_Count][MAX_TEXTUREUNIT];
 
 	TextureID currentRwTexturesCS[MAX_UAV], selectedRwTexturesCS[MAX_UAV];
+    int currentRwSlices[MAX_UAV], selectedRwSlices[MAX_UAV];
 
 	SamplerStateID currentSamplerStates[Shader_Count][MAX_SAMPLERSTATE], selectedSamplerStates[Shader_Count][MAX_SAMPLERSTATE];
 

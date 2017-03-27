@@ -52,9 +52,9 @@ void StateHelper::SetSamplerState(const char* name, SamplerStateID samplerState)
 	_device->setSamplerState(name, samplerState);
 }
 
-void StateHelper::SetUnorderedAccessTexture(const char* name, TextureID texture)
+void StateHelper::SetUnorderedAccessTexture(const char* name, TextureID texture, int slice)
 {
-	_device->setUnorderedAccessTexture(name, texture);
+	_device->setUnorderedAccessTexture(name, texture, slice);
 }
 
 void StateHelper::SetStructBuffer(const char* name, StructuredBufferID buffer)

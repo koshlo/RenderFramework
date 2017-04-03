@@ -19,16 +19,23 @@ IrradianceRenderer::IrradianceRenderer(GraphicsDevice* gfxDevice, RenderStateCac
 
 TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount, uint probeResolution, const Scene& scene)
 {
-    if (_debugSphereShader != SHADER_NONE)
-        return nullptr;
+    uint irrRes = probeResolution / 2;
 
-    _environmentMaps.resize(probeCount);
-    _irradianceMaps.resize(probeCount);
+    if (_debugSphereShader == SHADER_NONE)
+    {
+        _environmentMaps.resize(probeCount);
+        _irradianceMaps.resize(probeCount);
+        for (uint i = 0; i < probeCount; ++i)
+        {
+            _environmentMaps[i] = _gfxDevice->addRenderTarget(probeResolution, probeResolution, 1, 1, 6, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | RENDER_SLICES);
+            _irradianceMaps[i] = _gfxDevice->addRenderTarget(irrRes, irrRes, FORMAT_RGBA16F, SS_NONE, CUBEMAP | ADD_UAV);
+        }
+    }
+
     TextureID depthTarget = _gfxDevice->addRenderDepth(probeResolution, probeResolution, 16);
     for (uint i = 0; i < probeCount; ++i)
     {
-        TextureID& environmentMap = _environmentMaps[i];
-        environmentMap = _gfxDevice->addRenderTarget(probeResolution, probeResolution, 1, 1, 6, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | RENDER_SLICES);
+        const TextureID& environmentMap = _environmentMaps[i];
 
         ViewShaderData viewData;
         viewData.SetEyePos(float4(probePositions[i], 1.0f));
@@ -56,9 +63,7 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
             renderQueue.SubmitAll(_gfxDevice, _stateHelper);
         }
 
-        TextureID& irradianceMap = _irradianceMaps[i];
-        uint irrRes = probeResolution / 2;
-        irradianceMap = _gfxDevice->addRenderTarget(irrRes, irrRes, FORMAT_RGBA16F, SS_NONE, CUBEMAP | ADD_UAV);
+        const TextureID& irradianceMap = _irradianceMaps[i];
 
         ConvolveEnvMapShaderData irradianceShaderData;
         irradianceShaderData.SetEnvironmentMap(environmentMap);

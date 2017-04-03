@@ -31,7 +31,6 @@ Label::Label(const float x, const float y, const float w, const float h, const c
 }
 
 Label::~Label(){
-	delete text;
 }
 
 void Label::draw(GraphicsDevice *gfxDevice, const FontID defaultFont, const SamplerStateID linearClamp, const BlendStateID blendSrcAlpha, const DepthStateID depthState){

@@ -69,15 +69,17 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
         irradianceShaderData.SetEnvironmentMap(environmentMap);
         irradianceShaderData.SetEnvMapSampler(_envMapSampler);
         irradianceShaderData.SetIrradianceCubeMapUAV(irradianceMap);
-        irradianceShaderData.SetResolution(float2(irrRes, irrRes));
+        irradianceShaderData.SetResolution(float2(irrRes - 1.0f, irrRes - 1.0f));
+        irradianceShaderData.SetFrameRandom(float2(0, 0));
+
         DispatchGroup group{ irrRes / NUM_THREADS, irrRes / NUM_THREADS, 1 };
         const ShaderData* shaderData[] = { &irradianceShaderData };
         for (uint face = 0; face < 6; ++face)
         {
-            mat4 cubeFaceView = cubeViewMatrix(face);
-            irradianceShaderData.SetRight(cubeFaceView.rows[0].xyz());
-            irradianceShaderData.SetUp(cubeFaceView.rows[1].xyz());
-            irradianceShaderData.SetNormal(cubeFaceView.rows[2].xyz());
+            mat4 faceView = cubeViewMatrix(face);
+            irradianceShaderData.SetRight(faceView.rows[0].xyz());
+            irradianceShaderData.SetUp(faceView.rows[1].xyz());
+            irradianceShaderData.SetNormal(faceView.rows[2].xyz());
             irradianceShaderData.SetFace(face);
             RenderQueue::DispatchCompute(_stateHelper, group, _computeIrradiance, shaderData, array_size(shaderData));
         }

@@ -7,11 +7,19 @@ float2 Hammersley(uint index, uint numSamples, uint2 random)
     return float2(e1, e2);
 }
 
-float4 UniformSampleHemisphere(float2 e)
+float3 TangentToWorld(float3 vec, float3 tangentZ)
+{
+    float3 up = abs(tangentZ.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 tangentX = normalize(cross(up, tangentZ));
+    float3 tangentY = cross(tangentZ, tangentX);
+    return tangentX * vec.x + tangentY * vec.y + tangentZ * vec.z;
+}
+
+float4 UniformSampleHemisphere(float2 e, out float cosTheta, out float sinTheta)
 {
     float phi = 2 * PI * e.x;
-    float cosTheta = e.y;
-    float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    cosTheta = 1.0f - e.y;
+    sinTheta = sqrt(1 - cosTheta * cosTheta);
 
     float3 h;
     h.x = sinTheta * cos(phi);
@@ -22,3 +30,10 @@ float4 UniformSampleHemisphere(float2 e)
 
     return float4(h, pdf);
 }
+
+float4 UniformSampleHemisphere(float2 e)
+{
+    float cosTheta, sinTheta;
+    return UniformSampleHemisphere(e, cosTheta, sinTheta);
+}
+

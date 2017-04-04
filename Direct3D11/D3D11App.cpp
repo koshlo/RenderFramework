@@ -219,7 +219,7 @@ bool D3D11App::initAPI(const API_Revision api_revision, const DXGI_FORMAT backBu
 	// Create device and swap chain
 	DWORD deviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 #ifdef _DEBUG
-    deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+    //deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
 	D3D_FEATURE_LEVEL requested_feature_level = (api_revision == D3D11)? D3D_FEATURE_LEVEL_11_0 : (api_revision == D3D10_1)? D3D_FEATURE_LEVEL_10_1 : D3D_FEATURE_LEVEL_10_0;

@@ -7,6 +7,13 @@ float2 Hammersley(uint index, uint numSamples, uint2 random)
     return float2(e1, e2);
 }
 
+float2 UniformGrid(uint index, uint width, uint height)
+{
+    float x = index % width;
+    float y = index / height;
+    return float2(x / (width-1), y / (height-1));
+}
+
 float3 TangentToWorld(float3 vec, float3 tangentZ)
 {
     float3 up = abs(tangentZ.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
@@ -18,8 +25,8 @@ float3 TangentToWorld(float3 vec, float3 tangentZ)
 float4 UniformSampleHemisphere(float2 e, out float cosTheta, out float sinTheta)
 {
     float phi = 2 * PI * e.x;
-    cosTheta = 1.0f - e.y;
-    sinTheta = sqrt(1 - cosTheta * cosTheta);
+    float theta = (PI / 2) * e.y;
+    sincos(theta, sinTheta, cosTheta);
 
     float3 h;
     h.x = sinTheta * cos(phi);

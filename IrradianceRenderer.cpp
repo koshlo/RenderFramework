@@ -47,7 +47,7 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
             
             mat4 cubeFaceView = cubeViewMatrix(face);
             cubeFaceView.translate(-probePositions[i]);
-            mat4 faceViewProj = cubeProjectionMatrixD3D(0.001f, 2000.0f) * cubeFaceView;
+            mat4 faceViewProj = cubeProjectionMatrixD3D(0.0001f, 2000.0f) * cubeFaceView;
             viewData.SetViewProjection(faceViewProj);
             
             renderQueue.AddShaderData(&viewData);
@@ -70,7 +70,7 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
         irradianceShaderData.SetEnvMapSampler(_envMapSampler);
         irradianceShaderData.SetIrradianceCubeMapUAV(irradianceMap);
         irradianceShaderData.SetResolution(float2(irrRes - 1.0f, irrRes - 1.0f));
-        irradianceShaderData.SetFrameRandom(float2(0, 0));
+        irradianceShaderData.SetFrameRandom(float2(1, 1));
 
         DispatchGroup group{ irrRes / NUM_THREADS, irrRes / NUM_THREADS, 1 };
         const ShaderData* shaderData[] = { &irradianceShaderData };

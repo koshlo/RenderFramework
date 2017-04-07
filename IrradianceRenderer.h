@@ -13,17 +13,18 @@ class RenderStateCache;
 class RenderQueue;
 struct Scene;
 
+typedef TextureID TextureArrayID;
+
 class IrradianceRenderer
 {
 public:
     IrradianceRenderer(GraphicsDevice* gfxDevice, RenderStateCache* stateCache, StateHelper* stateHelper);
 
-    TextureID* BakeProbes(vec3* probePositions, uint probeCount, uint probeResolution, const Scene& scene);
+    TextureArrayID BakeProbes(vec3* probePositions, uint probeCount, uint probeResolution, Scene& scene);
     void DrawDebugSpheres(RenderQueue& renderQueue) const;
 private:
     void GenerateDebugData(vec3* probePositions, uint probeCount);
 
-    typedef TextureID TextureArrayID;
     typedef std::vector<ProbeDebugShaderData> ProbeDataArray;
 
     GraphicsDevice* _gfxDevice;

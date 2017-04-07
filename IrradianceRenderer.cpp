@@ -17,7 +17,7 @@ IrradianceRenderer::IrradianceRenderer(GraphicsDevice* gfxDevice, RenderStateCac
     _envMapSampler = _stateCache->GetSamplerState(SamplerStateDesc{ LINEAR, CLAMP, CLAMP, CLAMP });
 }
 
-TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount, uint probeResolution, const Scene& scene)
+TextureArrayID IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount, uint probeResolution, Scene& scene)
 {
     uint irrRes = probeResolution / 2;
 
@@ -25,6 +25,9 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
     {
         _environmentMapsArray = _gfxDevice->addRenderTarget(probeResolution, probeResolution, 1, 1, probeCount, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | RENDER_SLICES);
         _irradianceMapsArray = _gfxDevice->addRenderTarget(irrRes, irrRes, 1, 1, probeCount, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | ADD_UAV);
+        
+        scene.lightShaderData->SetIrradianceProbes(_irradianceMapsArray);
+        scene.lightShaderData->SetProbeCount(0);
     }
 
     TextureID depthTarget = _gfxDevice->addRenderDepth(probeResolution, probeResolution, 16);
@@ -79,7 +82,7 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
 
     GenerateDebugData(probePositions, probeCount);
 
-    return nullptr;
+    return _irradianceMapsArray;
 }
 
 void IrradianceRenderer::DrawDebugSpheres(RenderQueue& renderQueue) const

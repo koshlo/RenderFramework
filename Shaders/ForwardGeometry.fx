@@ -38,7 +38,6 @@ PsIn main(VsIn vsIn)
 
 [Fragment shader]
 
-#include "Lighting.data.fx"
 #include "Shadow.inc.fx"
 #include "Lighting.inc.fx"
 #include "Material.data.fx"
@@ -67,6 +66,7 @@ SurfaceInfo GetSurfaceInfo(float2 uv, float3x3 tangentToWS, float3 posWS)
 {
     SurfaceInfo outSurfInfo;
     float3 normalTS = NormalMap.Sample(MaterialSampler, uv) * 2.0f - 1.0f;
+    outSurfInfo.posWS = posWS;
     outSurfInfo.normal = normalize(mul(normalTS, tangentToWS));
     outSurfInfo.lightDir = normalize(SunDirection);
     outSurfInfo.viewDir = normalize(EyePos.xyz - posWS);
@@ -81,6 +81,7 @@ float4 main(PsIn psIn) : SV_Target
     MaterialInfo matInfo = GetMaterialInfo(uv);
     SurfaceInfo surfInfo = GetSurfaceInfo(uv, float3x3(psIn.Tangent, psIn.Bitangent, psIn.Normal), psIn.PositionWS);
     outColor.rgb = ComputeDirectLight(matInfo, surfInfo, SunIntensity) * visibility;
+    outColor.rgb += ComputeIndirectLight(matInfo, surfInfo);
 	outColor.a = 1;
 	return outColor;
 }

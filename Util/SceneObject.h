@@ -41,7 +41,7 @@ struct Scene
     const SceneObject* objects;
     uint numObjects;
 
-    const LightShaderData* lightShaderData;
+    LightShaderData* lightShaderData;
     const ShadowShaderData* shadowShaderData;
     const ExpWarpingShaderData* expWarpingData;
 };

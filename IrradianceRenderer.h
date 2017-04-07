@@ -23,15 +23,15 @@ public:
 private:
     void GenerateDebugData(vec3* probePositions, uint probeCount);
 
-    typedef std::vector<TextureID> TextureArray;
+    typedef TextureID TextureArrayID;
     typedef std::vector<ProbeDebugShaderData> ProbeDataArray;
 
     GraphicsDevice* _gfxDevice;
     RenderStateCache* _stateCache;
     StateHelper* _stateHelper;
 
-    TextureArray _environmentMaps;
-    TextureArray _irradianceMaps;
+    TextureArrayID _environmentMapsArray;
+    TextureArrayID _irradianceMapsArray;
 
     ShaderID _computeIrradiance;
     SamplerStateID _envMapSampler;

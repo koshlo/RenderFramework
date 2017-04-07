@@ -30,6 +30,5 @@ PsIn main(VsIn vertex)
 
 float4 main(PsIn psIn) : SV_Target
 {
-    return CubeMap.Sample(CubeMapSampler, psIn.normal);
-    //return float4(psIn.normal.xxx, 1);
+    return CubeMapArray.Sample(CubeMapSampler, float4(psIn.normal, ProbeIndex));
 }

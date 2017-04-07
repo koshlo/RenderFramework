@@ -787,15 +787,15 @@ TextureID Direct3D11Renderer::addRenderTarget(const int width, const int height,
 		desc.CPUAccessFlags = 0;
 		if (flags & CUBEMAP)
 		{
-			desc.ArraySize = 6;
+            tex.arraySize *= 6;
 			desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 		}
 		else
 		{
-			desc.ArraySize = arraySize;
 			desc.MiscFlags = 0;
 		}
-		
+
+        desc.ArraySize = tex.arraySize;		
         desc.MiscFlags |= additionalMiscFlags;
 
 		if (FAILED(device->CreateTexture2D(&desc, NULL, (ID3D11Texture2D **) &tex.texture)))
@@ -834,7 +834,7 @@ TextureID Direct3D11Renderer::addRenderTarget(const int width, const int height,
         tex.uav = createDefaultUAV(tex.texture);
     }
 
-	int sliceCount = (depth == 1)? arraySize : depth;
+	int sliceCount = (depth == 1)? tex.arraySize : depth;
 
 	if (flags & SAMPLE_SLICES)
 	{

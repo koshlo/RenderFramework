@@ -38,6 +38,7 @@ private:
 #define CONSTANT_ARRAY(Name, Type, Size) Type Name[Size]
 #define TEXTURE_2D(Name, Type) Texture2D<Type> Name
 #define TEXTURE_CUBE(Name, Type) TextureCube<Type> Name
+#define TEXTURE_CUBE_ARRAY(Name, Type) TextureCubeArray<Type> Name
 #define TEXTURE_3D(Name, Type) Texture3D<Type> Name
 #define SAMPLER_STATE(Name) SamplerState Name
 #define UAV_TEXTURE_2D(Name, Type) RWTexture2D<Type> Name

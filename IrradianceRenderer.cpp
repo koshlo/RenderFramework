@@ -23,27 +23,20 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
 
     if (_debugSphereShader == SHADER_NONE)
     {
-        _environmentMaps.resize(probeCount);
-        _irradianceMaps.resize(probeCount);
-        for (uint i = 0; i < probeCount; ++i)
-        {
-            _environmentMaps[i] = _gfxDevice->addRenderTarget(probeResolution, probeResolution, 1, 1, 6, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | RENDER_SLICES);
-            _irradianceMaps[i] = _gfxDevice->addRenderTarget(irrRes, irrRes, FORMAT_RGBA16F, SS_NONE, CUBEMAP | ADD_UAV);
-        }
+        _environmentMapsArray = _gfxDevice->addRenderTarget(probeResolution, probeResolution, 1, 1, probeCount, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | RENDER_SLICES);
+        _irradianceMapsArray = _gfxDevice->addRenderTarget(irrRes, irrRes, 1, 1, probeCount, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | ADD_UAV);
     }
 
     TextureID depthTarget = _gfxDevice->addRenderDepth(probeResolution, probeResolution, 16);
     for (uint i = 0; i < probeCount; ++i)
     {
-        const TextureID& environmentMap = _environmentMaps[i];
-
         ViewShaderData viewData;
         viewData.SetEyePos(float4(probePositions[i], 1.0f));
         float fResolution = static_cast<float>(probeResolution);
         viewData.SetViewport(float2(fResolution, fResolution));
         for (uint face = 0; face < 6; ++face)
         {
-            RenderQueue renderQueue(_gfxDevice, &environmentMap, 1, depthTarget, face);
+            RenderQueue renderQueue(_gfxDevice, &_environmentMapsArray, 1, depthTarget, i * 6 + face);
             
             mat4 cubeFaceView = cubeViewMatrix(face);
             cubeFaceView.translate(-probePositions[i]);
@@ -63,14 +56,13 @@ TextureID* IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCount,
             renderQueue.SubmitAll(_gfxDevice, _stateHelper);
         }
 
-        const TextureID& irradianceMap = _irradianceMaps[i];
-
         ConvolveEnvMapShaderData irradianceShaderData;
-        irradianceShaderData.SetEnvironmentMap(environmentMap);
+        irradianceShaderData.SetEnvironmentMapArray(_environmentMapsArray);
         irradianceShaderData.SetEnvMapSampler(_envMapSampler);
-        irradianceShaderData.SetIrradianceCubeMapUAV(irradianceMap);
+        irradianceShaderData.SetIrradianceCubeMapUAV(_irradianceMapsArray);
         irradianceShaderData.SetResolution(float2(irrRes - 1.0f, irrRes - 1.0f));
         irradianceShaderData.SetFrameRandom(float2(1, 1));
+        irradianceShaderData.SetProbeIndex(i);
 
         DispatchGroup group{ irrRes / NUM_THREADS, irrRes / NUM_THREADS, 1 };
         const ShaderData* shaderData[] = { &irradianceShaderData };
@@ -128,7 +120,8 @@ void IrradianceRenderer::GenerateDebugData(vec3* probePositions, uint probeCount
         ProbeDebugShaderData& currentData = _probeShaderData[i];
         static const float scale = 20.0f;
         currentData.SetTranslationScale(float4(probePositions[i], scale));
-        currentData.SetCubeMap(_irradianceMaps[i]);
+        currentData.SetCubeMapArray(_irradianceMapsArray);
         currentData.SetCubeMapSampler(_sphereSampler);
+        currentData.SetProbeIndex(i);
     }
 }

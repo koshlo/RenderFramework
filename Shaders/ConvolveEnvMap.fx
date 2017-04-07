@@ -25,11 +25,11 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
         float cosTheta, sinTheta;
         float3 sampleDirTS = UniformSampleHemisphere(e, cosTheta, sinTheta).xyz;
         float3 sampleDirWS = TangentToWorld(sampleDirTS.xyz, outputNormalWS);
-        float3 colorSample = EnvironmentMap.SampleLevel(EnvMapSampler, sampleDirWS, 0).rgb;
+        float3 colorSample = EnvironmentMapArray.SampleLevel(EnvMapSampler, float4(sampleDirWS, ProbeIndex), 0).rgb;
         irradiance += colorSample * cosTheta * sinTheta;
     }
     irradiance = (irradiance / NumSamples) * PI * PI;
 
-    uint3 arrayCoords = uint3(threadID.xy, Face);
+    uint3 arrayCoords = uint3(threadID.xy, ProbeIndex * 6 + Face);
     IrradianceCubeMapUAV[arrayCoords] = float4(irradiance, 1.0);
 }

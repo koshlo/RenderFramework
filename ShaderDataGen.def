@@ -4,6 +4,7 @@
 #undef CONSTANT_ARRAY
 #undef TEXTURE_2D
 #undef TEXTURE_CUBE
+#undef TEXTURE_CUBE_ARRAY
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
@@ -16,6 +17,7 @@
 #define CONSTANT_ARRAY(Name, Type, Size) Type _##Name[Size]; uint _##Name##Count;
 #define TEXTURE_2D(Name, Type) TextureID _##Name;
 #define TEXTURE_CUBE(Name, Type) TextureID _##Name;
+#define TEXTURE_CUBE_ARRAY(Name, Type) TextureID _##Name;
 #define TEXTURE_3D(Name, Type) TextureID _##Name;
 #define SAMPLER_STATE(Name) SamplerStateID _##Name;
 #define UAV_TEXTURE_2D(Name, Type) TextureID _##Name;
@@ -30,6 +32,7 @@
 #undef CONSTANT_ARRAY
 #undef TEXTURE_2D
 #undef TEXTURE_CUBE
+#undef TEXTURE_CUBE_ARRAY
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
@@ -53,6 +56,7 @@
 #define CONSTANT_ARRAY(Name, Type, Size) ARRAY_ACCESSOR_HELPER(Name, Type)
 #define TEXTURE_2D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
 #define TEXTURE_CUBE(Name, Type) ACCESSOR_HELPER(Name, TextureID)
+#define TEXTURE_CUBE_ARRAY(Name, Type) ACCESSOR_HELPER(Name, TextureID)
 #define TEXTURE_3D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
 #define SAMPLER_STATE(Name) ACCESSOR_HELPER(Name, SamplerStateID)
 #define UAV_TEXTURE_2D(Name, Type) ACCESSOR_HELPER(Name, TextureID)
@@ -70,6 +74,7 @@
 #undef CONSTANT_ARRAY
 #undef TEXTURE_2D
 #undef TEXTURE_CUBE
+#undef TEXTURE_CUBE_ARRAY
 #undef TEXTURE_3D
 #undef SAMPLER_STATE
 #undef UAV_TEXTURE_2D
@@ -85,6 +90,7 @@
 #define CONSTANT_ARRAY(Name, Type, Size) stateHelper->SetShaderArray(STR(Name), _##Name, _##Name##Count);
 #define TEXTURE_2D(Name, Type) stateHelper->SetShaderTexture(STR(Name), _##Name);
 #define TEXTURE_CUBE(Name, Type) stateHelper->SetShaderTexture(STR(Name), _##Name);
+#define TEXTURE_CUBE_ARRAY(Name, Type) stateHelper->SetShaderTexture(STR(Name), _##Name);
 #define TEXTURE_3D(Name, Type) stateHelper->SetShaderTexture(STR(Name), _##Name);
 #define SAMPLER_STATE(Name) stateHelper->SetSamplerState(STR(Name), _##Name);
 #define UAV_TEXTURE_2D(Name, Type) stateHelper->SetUnorderedAccessTexture(STR(Name), _##Name);

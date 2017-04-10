@@ -35,7 +35,7 @@ TextureArrayID IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCo
     {
         _environmentMapsArray = _gfxDevice->addRenderTarget(probeResolution, probeResolution, 1, 1, probeCount, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | RENDER_SLICES);
         _irradianceMapsArray = _gfxDevice->addRenderTarget(irrRes, irrRes, 1, 1, probeCount, FORMAT_RGBA16F, 1, SS_NONE, CUBEMAP | ADD_UAV | RENDER_SLICES);
-        _depthTarget = _gfxDevice->addRenderDepth(probeResolution, probeResolution, 16);
+        _depthTarget = _gfxDevice->addRenderDepth(probeResolution, probeResolution, 32);
     }    
 
     ClearRenderTarget(_stateHelper, _irradianceMapsArray, probeCount * 6, float4(0, 0, 0, 0));
@@ -57,7 +57,7 @@ TextureArrayID IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCo
 
 void IrradianceRenderer::BakePass(vec3* probePositions, uint probeCount, uint probeResolution, uint irradianceResolution, Scene& scene)
 {
-    mat4 cubeProjection = cubeProjectionMatrixD3D(0.0001f, 3000.0f);
+    mat4 cubeProjection = cubeProjectionMatrixD3D(3000.0f, 0.001f);
     for (uint i = 0; i < probeCount; ++i)
     {
         ViewShaderData viewData;
@@ -147,7 +147,7 @@ void IrradianceRenderer::GenerateDebugData(vec3* probePositions, uint probeCount
         ProbeDebugShaderData& currentData = _probeShaderData[i];
         static const float scale = 20.0f;
         currentData.SetTranslationScale(float4(probePositions[i], scale));
-        currentData.SetCubeMapArray(_irradianceMapsArray);
+        currentData.SetCubeMapArray(_environmentMapsArray);
         currentData.SetCubeMapSampler(_sphereSampler);
         currentData.SetProbeIndex(i);
     }

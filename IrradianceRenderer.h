@@ -20,10 +20,11 @@ class IrradianceRenderer
 public:
     IrradianceRenderer(GraphicsDevice* gfxDevice, RenderStateCache* stateCache, StateHelper* stateHelper);
 
-    TextureArrayID BakeProbes(vec3* probePositions, uint probeCount, uint probeResolution, Scene& scene);
+    TextureArrayID BakeProbes(vec3* probePositions, uint probeCount, uint probeResolution, Scene& scene, uint numPasses);
     void DrawDebugSpheres(RenderQueue& renderQueue) const;
 private:
     void GenerateDebugData(vec3* probePositions, uint probeCount);
+    void BakePass(vec3* probePositions, uint probeCount, uint probeResolution, uint irradianceResolution, Scene& scene);
 
     typedef std::vector<ProbeDebugShaderData> ProbeDataArray;
 
@@ -33,6 +34,7 @@ private:
 
     TextureArrayID _environmentMapsArray;
     TextureArrayID _irradianceMapsArray;
+    TextureID _depthTarget;
 
     ShaderID _computeIrradiance;
     SamplerStateID _envMapSampler;

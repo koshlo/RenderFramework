@@ -33,6 +33,9 @@ float GetSqrDistance(float3 lhs, float3 rhs)
 
 float3 ComputeIndirectLight(const in MaterialInfo material, const in SurfaceInfo surfaceInfo)
 {
+    if (ProbeCount == 0)
+        return 0;
+
     uint2 nearestProbe = 0;
     float2 minSqrDistance = BIG_FLOAT;
     for (uint i = 0; i < ProbeCount; ++i)

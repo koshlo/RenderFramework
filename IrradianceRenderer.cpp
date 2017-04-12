@@ -57,7 +57,7 @@ TextureArrayID IrradianceRenderer::BakeProbes(vec3* probePositions, uint probeCo
 
 void IrradianceRenderer::BakePass(vec3* probePositions, uint probeCount, uint probeResolution, uint irradianceResolution, Scene& scene)
 {
-    mat4 cubeProjection = cubeProjectionMatrixD3D(3000.0f, 0.001f);
+    mat4 cubeProjection = cubeProjectionMatrixD3D(2000.0f, 0.001f);
     for (uint i = 0; i < probeCount; ++i)
     {
         ViewShaderData viewData;
@@ -147,7 +147,7 @@ void IrradianceRenderer::GenerateDebugData(vec3* probePositions, uint probeCount
         ProbeDebugShaderData& currentData = _probeShaderData[i];
         static const float scale = 20.0f;
         currentData.SetTranslationScale(float4(probePositions[i], scale));
-        currentData.SetCubeMapArray(_environmentMapsArray);
+        currentData.SetCubeMapArray(_irradianceMapsArray);
         currentData.SetCubeMapSampler(_sphereSampler);
         currentData.SetProbeIndex(i);
     }

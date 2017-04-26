@@ -66,6 +66,8 @@ public:
 
 	void removeTexture(const TextureID texture);
 
+    void getTextureSize(const TextureID texture, uint* width, uint* height) const;
+
 	ShaderID addShader(const char *vsText, const char *gsText, const char *fsText, const int vsLine, const int gsLine, const int fsLine,
 		const char *header = NULL, const char *extra = NULL, const char *fileName = NULL, const char **attributeNames = NULL, const int nAttributes = 0, const uint flags = 0);
     ShaderID addComputeShader(const char* src, const char** difenes, const int nDefines, const char* filename);

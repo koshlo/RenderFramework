@@ -1128,6 +1128,13 @@ void Direct3D11Renderer::removeTexture(const TextureID texture)
     }
 }
 
+void Direct3D11Renderer::getTextureSize(const TextureID texture, uint* width, uint* height) const
+{
+    const Texture& tex = textures[texture];
+    *width = tex.width;
+    *height = tex.height;
+}
+
 ShaderID Direct3D11Renderer::addShader(const char *vsText, const char *gsText, const char *fsText, const int vsLine, const int gsLine, const int fsLine,
 									   const char *header, const char *extra, const char *fileName, const char **attributeNames, const int nAttributes, const uint flags)
 {

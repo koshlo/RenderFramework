@@ -144,6 +144,7 @@ public:
 
 	virtual void removeTexture(const TextureID texture) = 0;
 
+    virtual void getTextureSize(const TextureID texture, uint* width, uint* height) const = 0;
 
 	ShaderID addShader(const char *fileName, const uint flags = 0);
 	ShaderID addShader(const char *fileName, const char *extra, const uint flags = 0);
